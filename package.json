@@ -1,17 +1,19 @@
 {
   "name": "gamejam-counter",
+  "module": "index.ts",
   "type": "module",
   "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "dev": "bun run index.ts"
   },
   "dependencies": {
-    "nuxt": "^4.4.2",
-    "vue": "^3.5.32",
-    "vue-router": "^5.0.4"
+    "express": "^5.2.1"
   }
 }
