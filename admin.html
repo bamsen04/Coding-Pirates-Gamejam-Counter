@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page | CP Gamejam</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-white text-slate-800">
+    <div class="max-w-4xl mx-auto px-4 py-10 space-y-10">
+        <h1 class="text-2xl font-bold uppercase tracking-widest">Admin</h1>
+
+        <section class="border-4 border-black p-6 space-y-4">
+            <h2 class="text-lg font-bold uppercase tracking-widest">Config</h2>
+            <form id="config-form" class="flex flex-wrap items-end gap-3">
+                <label class="flex flex-col gap-1 text-sm">
+                    Message expire rate (minutes)
+                    <input id="ttl-input" type="number" min="1" step="1" required
+                        class="border-2 border-black px-3 py-2 w-40" />
+                </label>
+                <button type="submit"
+                    class="bg-black text-white font-bold uppercase tracking-widest py-2 px-4 hover:bg-slate-800 transition-colors">Save</button>
+                <span id="config-status" class="text-sm"></span>
+            </form>
+        </section>
+
+        <section class="border-4 border-black p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold uppercase tracking-widest">Pending messages</h2>
+                <span id="pending-count" class="text-sm text-slate-500"></span>
+            </div>
+            <div id="pending-list" class="space-y-3"></div>
+        </section>
+
+        <section class="border-4 border-black p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold uppercase tracking-widest">Approved messages</h2>
+                <span id="approved-count" class="text-sm text-slate-500"></span>
+            </div>
+            <div id="approved-list" class="space-y-3"></div>
+        </section>
+    </div>
+
+    <script>
+        const pendingListEl = document.getElementById("pending-list");
+        const approvedListEl = document.getElementById("approved-list");
+        const pendingCountEl = document.getElementById("pending-count");
+        const approvedCountEl = document.getElementById("approved-count");
+        const ttlInput = document.getElementById("ttl-input");
+        const configForm = document.getElementById("config-form");
+        const configStatus = document.getElementById("config-status");
+
+        function formatTime(ms) {
+            return new Date(ms).toLocaleTimeString();
+        }
+
+        function renderMessage(msg, actions) {
+            const div = document.createElement("div");
+            div.className = "border-2 border-black p-3 flex items-start justify-between gap-4";
+
+            const info = document.createElement("div");
+            info.className = "min-w-0";
+
+            const author = document.createElement("div");
+            author.className = "text-xs font-semibold text-slate-500 mb-1 truncate";
+            author.textContent = `${msg.author} · ${formatTime(msg.sentAt)}`;
+
+            const text = document.createElement("div");
+            text.className = "text-sm break-words";
+            text.textContent = msg.text;
+
+            info.appendChild(author);
+            info.appendChild(text);
+
+            const actionsEl = document.createElement("div");
+            actionsEl.className = "flex gap-2 shrink-0";
+            actionsEl.appendChild(actions(msg));
+
+            div.appendChild(info);
+            div.appendChild(actionsEl);
+            return div;
+        }
+
+        function makeButton(label, className, onClick) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = label;
+            btn.className = `text-xs font-bold uppercase tracking-widest py-1 px-2 border-2 border-black transition-colors ${className}`;
+            btn.addEventListener("click", onClick);
+            return btn;
+        }
+
+        async function loadMessages() {
+            try {
+                const res = await fetch("/admin/api/messages");
+                const { pending, approved } = await res.json();
+
+                pendingCountEl.textContent = `${pending.length}`;
+                approvedCountEl.textContent = `${approved.length}`;
+
+                pendingListEl.innerHTML = "";
+                if (pending.length === 0) {
+                    pendingListEl.innerHTML = `<p class="text-sm text-slate-400">No pending messages.</p>`;
+                } else {
+                    pending.forEach((msg) => {
+                        const row = renderMessage(msg, () => {
+                            const container = document.createElement("div");
+                            container.className = "flex gap-2";
+                            container.appendChild(makeButton("Approve", "bg-emerald-500 text-white hover:bg-emerald-600", () => approveMessage(msg.id)));
+                            container.appendChild(makeButton("Reject", "bg-red-500 text-white hover:bg-red-600", () => rejectMessage(msg.id)));
+                            return container;
+                        });
+                        pendingListEl.appendChild(row);
+                    });
+                }
+
+                approvedListEl.innerHTML = "";
+                if (approved.length === 0) {
+                    approvedListEl.innerHTML = `<p class="text-sm text-slate-400">No approved messages.</p>`;
+                } else {
+                    approved.forEach((msg) => {
+                        const row = renderMessage(msg, () => makeButton("Remove", "bg-red-500 text-white hover:bg-red-600", () => removeMessage(msg.id)));
+                        approvedListEl.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                console.error("failed to load messages", err);
+            }
+        }
+
+        async function approveMessage(id) {
+            await fetch(`/admin/api/messages/${id}/approve`, { method: "POST" });
+            loadMessages();
+        }
+
+        async function rejectMessage(id) {
+            await fetch(`/admin/api/messages/${id}/reject`, { method: "POST" });
+            loadMessages();
+        }
+
+        async function removeMessage(id) {
+            await fetch(`/admin/api/messages/${id}`, { method: "DELETE" });
+            loadMessages();
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch("/admin/api/config");
+                const { ttlMinutes } = await res.json();
+                ttlInput.value = ttlMinutes;
+            } catch (err) {
+                console.error("failed to load config", err);
+            }
+        }
+
+        configForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            configStatus.textContent = "";
+            try {
+                const res = await fetch("/admin/api/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ttlMinutes: Number(ttlInput.value) }),
+                });
+                if (!res.ok) throw new Error("request failed");
+                configStatus.textContent = "Saved.";
+                configStatus.className = "text-sm text-emerald-600";
+            } catch (err) {
+                configStatus.textContent = "Failed to save.";
+                configStatus.className = "text-sm text-red-500";
+            }
+        });
+
+        loadConfig();
+        loadMessages();
+        setInterval(loadMessages, 5000);
+    </script>
+</body>
+
+</html>
