@@ -27,12 +27,16 @@
 
             0%,
             100% {
-                transform: translate(var(--tx), calc(-50% + var(--ty)));
+                transform: translateY(0);
             }
 
             50% {
-                transform: translate(var(--tx), calc(-50% + var(--ty) - 10px));
+                transform: translateY(-10px);
             }
+        }
+
+        .clock-desktop {
+            font-size: clamp(3rem, 7vw, 8rem);
         }
 
         /* CSS-only seven-segment digit display */
@@ -157,21 +161,19 @@
         <div id="bubbles-mobile" class="w-full flex flex-col gap-3"></div>
     </div>
 
-    <div class="hidden md:contents">
+    <div class="hidden md:grid relative h-screen grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-8 px-8 pt-28 pb-28">
         <h1
-            class="absolute top-6 left-1/2 -translate-x-1/2 text-slate-700 text-3xl md:text-5xl font-bold tracking-[0.2em] uppercase text-center px-4">
+            class="absolute top-6 left-1/2 -translate-x-1/2 w-full text-slate-700 text-3xl md:text-5xl font-bold tracking-[0.2em] uppercase text-center px-4">
             Coding Pirates Gamejam
         </h1>
 
-        <div id="bubbles" class="absolute inset-0"></div>
+        <div id="bubbles-left" class="h-full min-w-0 flex flex-col justify-evenly items-start gap-4"></div>
 
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="text-center">
-                <div id="clock"
-                    class="clock-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl leading-none bg-white border-4 border-red-400 px-6 py-4 md:px-10 md:py-6 flex items-center justify-center">
-                </div>
-            </div>
+        <div id="clock"
+            class="clock-display clock-desktop leading-none bg-white border-4 border-red-400 px-10 py-6 flex items-center justify-center">
         </div>
+
+        <div id="bubbles-right" class="h-full min-w-0 flex flex-col justify-evenly items-end gap-4"></div>
     </div>
 
     <button id="fab" type="button"
@@ -195,7 +197,7 @@
     </div>
 
     <script>
-        const TARGET_DATE = new Date(2026, 7, 3, 12, 40, 0).getTime();
+        const TARGET_DATE = new Date(2026, 9-1, 25, 12, 0, 0).getTime();
         const MAX_MS = 24 * 60 * 60 * 1000;
 
         const clockEls = document.querySelectorAll(".clock-display");
@@ -247,7 +249,8 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        const bubblesEl = document.getElementById("bubbles");
+        const bubblesLeftEl = document.getElementById("bubbles-left");
+        const bubblesRightEl = document.getElementById("bubbles-right");
         const bubbleColors = [
             "border-emerald-300 bg-emerald-50",
             "border-sky-300 bg-sky-50",
@@ -263,21 +266,9 @@
             return bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
         }
 
-        function placeBubble(msg, side, slot, i, width) {
-            const y = ((slot + 1) / (PER_SIDE + 1)) * 100;
-            const margin = window.innerWidth < 768 ? 16 : 32;
-
+        function placeBubble(msg, side, i) {
             const div = document.createElement("div");
-            div.className = `bubble absolute border-2 ${randomColor()} backdrop-blur px-4 py-3 text-slate-800`;
-            div.style.width = `${width}px`;
-            div.style.setProperty("--tx", "0px");
-            div.style.setProperty("--ty", "0px");
-            div.style.top = `${y}%`;
-            if (side === "left") {
-                div.style.left = `${margin}px`;
-            } else {
-                div.style.right = `${margin}px`;
-            }
+            div.className = `bubble w-full max-w-[340px] border-2 ${randomColor()} backdrop-blur px-4 py-3 text-slate-800`;
             div.style.animationDelay = `${(i % 5) * 0.7}s`;
 
             const author = document.createElement("div");
@@ -290,22 +281,20 @@
 
             div.appendChild(author);
             div.appendChild(text);
-            bubblesEl.appendChild(div);
+            (side === "left" ? bubblesLeftEl : bubblesRightEl).appendChild(div);
         }
 
         function layoutBubbles(messages) {
-            bubblesEl.innerHTML = "";
+            bubblesLeftEl.innerHTML = "";
+            bubblesRightEl.innerHTML = "";
 
             const newest = [...messages]
                 .sort((a, b) => b.sentAt - a.sentAt)
                 .slice(0, PER_SIDE * 2);
 
-            const width = Math.min(340, Math.max(160, window.innerWidth * 0.24));
-
             newest.forEach((msg, i) => {
                 const side = i % 2 === 0 ? "left" : "right";
-                const slot = Math.floor(i / 2);
-                placeBubble(msg, side, slot, i, width);
+                placeBubble(msg, side, i);
             });
         }
 
@@ -353,7 +342,6 @@
 
         fetchMessages();
         setInterval(fetchMessages, 60000);
-        window.addEventListener("resize", () => layoutBubbles(lastMessages));
 
         const COOLDOWN_MS = 30 * 60 * 1000;
         const STORAGE_KEY = "gamejam_last_sent";
