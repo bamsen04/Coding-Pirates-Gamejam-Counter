@@ -6,6 +6,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const admin_password = process.env.ADMIN_PASSWORD;
+const turnstile_secret = process.env.TURNSTILE_SECRET_KEY;
 
 interface Message {
     id: string;
@@ -80,8 +81,30 @@ app.get("/messages", (req, res) => {
     res.json(approvedMessages);
 });
 
-app.post("/messages", (req, res) => {
+async function verifyTurnstile(token: unknown, ip: string | undefined): Promise<boolean> {
+    if (!turnstile_secret || typeof token !== "string" || !token) return false;
+    const body = new URLSearchParams({ secret: turnstile_secret, response: token });
+    if (ip) body.set("remoteip", ip);
+    try {
+        const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            body,
+        });
+        const data = (await res.json()) as { success?: boolean };
+        return data.success === true;
+    } catch (err) {
+        console.error("turnstile verification failed", err);
+        return false;
+    }
+}
+
+app.post("/messages", async (req, res) => {
     const { author, message } = req.body;
+    const token = req.body["cf-turnstile-response"];
+    if (!(await verifyTurnstile(token, req.ip))) {
+        res.status(403).json({ status: "turnstile_failed" });
+        return;
+    }
     messageQueue.push({ id: crypto.randomUUID(), author: author, text: message, sentAt: Date.now() });
     res.json({ status: "pending" });
 });
