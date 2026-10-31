@@ -60,6 +60,50 @@
         const configForm = document.getElementById("config-form");
         const configStatus = document.getElementById("config-status");
 
+        let audioCtx = null;
+        let knownPendingIds = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function unlockAudio() {
+            try {
+                const ctx = getAudioCtx();
+                if (ctx.state === "suspended") ctx.resume();
+            } catch (err) {
+                console.error("audio unlock failed", err);
+            }
+        }
+
+        function playBeep() {
+            try {
+                const ctx = getAudioCtx();
+                if (ctx.state === "suspended") ctx.resume();
+                [880, 1175].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const start = ctx.currentTime + i * 0.18;
+                    osc.type = "square";
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.15, start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.17);
+                });
+            } catch (err) {
+                console.error("beep failed", err);
+            }
+        }
+
+        document.addEventListener("click", unlockAudio, { once: true });
+        document.addEventListener("keydown", unlockAudio, { once: true });
+
         function formatTime(ms) {
             return new Date(ms).toLocaleTimeString();
         }
@@ -104,6 +148,12 @@
             try {
                 const res = await fetch("/admin/api/messages");
                 const { pending, approved } = await res.json();
+
+                const currentIds = new Set(pending.map((m) => m.id));
+                if (knownPendingIds !== null && pending.some((m) => !knownPendingIds.has(m.id))) {
+                    playBeep();
+                }
+                knownPendingIds = currentIds;
 
                 pendingCountEl.textContent = `${pending.length}`;
                 approvedCountEl.textContent = `${approved.length}`;
@@ -183,7 +233,7 @@
 
         loadConfig();
         loadMessages();
-        setInterval(loadMessages, 5000);
+        setInterval(loadMessages, 60000);
     </script>
 </body>
 

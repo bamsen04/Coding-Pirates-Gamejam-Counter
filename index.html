@@ -170,14 +170,14 @@
         <div id="bubbles-left" class="h-full min-w-0 flex flex-col justify-evenly items-start gap-4"></div>
 
         <div id="clock"
-            class="clock-display clock-desktop leading-none bg-white border-4 border-red-400 px-10 py-6 flex items-center justify-center">
+            class="rounded-xl clock-display clock-desktop leading-none bg-white border-4 border-red-400 px-10 py-6 flex items-center justify-center">
         </div>
 
         <div id="bubbles-right" class="h-full min-w-0 flex flex-col justify-evenly items-end gap-4"></div>
     </div>
 
     <button id="fab" type="button"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-16 h-16 bg-black text-white text-3xl font-bold border-2 border-black flex items-center justify-center hover:bg-slate-800 transition-colors">+</button>
+        class="rounded-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-16 h-16 bg-black text-white text-3xl font-bold border-2 border-black flex items-center justify-center hover:bg-slate-800 transition-colors">+</button>
 
     <div id="message-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
         <div class="bg-white border-4 border-black w-full max-w-sm p-6 relative">
@@ -197,7 +197,7 @@
     </div>
 
     <script>
-        const TARGET_DATE = new Date(2026, 9-1, 25, 12, 0, 0).getTime();
+        const TARGET_DATE = new Date(2026, 11-1, 1, 13, 0, 0).getTime();
         const MAX_MS = 24 * 60 * 60 * 1000;
 
         const clockEls = document.querySelectorAll(".clock-display");
@@ -343,7 +343,7 @@
         fetchMessages();
         setInterval(fetchMessages, 60000);
 
-        const COOLDOWN_MS = 30 * 60 * 1000;
+        const COOLDOWN_MS = 10 * 60 * 1000;
         const STORAGE_KEY = "gamejam_last_sent";
 
         const fab = document.getElementById("fab");
