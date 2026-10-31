@@ -7,6 +7,7 @@
     <title>Admin Login | CP Gamejam</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@simplewebauthn/browser@13.1.0/dist/bundle/index.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
@@ -19,20 +20,37 @@
 <body class="min-h-screen bg-white text-slate-800 flex items-center justify-center px-4">
     <div class="w-full max-w-sm border-4 border-black p-6 space-y-4">
         <h1 class="text-lg font-bold uppercase tracking-widest">Admin login</h1>
-        <form method="POST" action="/admin/login" class="space-y-3">
-            <input type="password" name="password" required placeholder="Password" autofocus
-                class="w-full border-2 border-black px-3 py-2 text-sm" />
-            <button type="submit"
-                class="w-full bg-black text-white font-bold uppercase tracking-widest py-2 hover:bg-slate-800 transition-colors">Log
-                in</button>
-        </form>
-        <p id="login-error" class="text-sm text-red-500 hidden">Wrong password.</p>
+        <button id="login-btn" type="button"
+            class="w-full bg-black text-white font-bold uppercase tracking-widest py-2 hover:bg-slate-800 transition-colors">Log
+            in with passkey</button>
+        <p id="login-error" class="text-sm text-red-500"></p>
     </div>
 
     <script>
-        if (new URLSearchParams(window.location.search).get("error") === "1") {
-            document.getElementById("login-error").classList.remove("hidden");
+        const errorEl = document.getElementById("login-error");
+
+        async function post(url, body) {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body ?? {}),
+            });
+            if (res.status === 429) throw new Error("Too many attempts. Try again later.");
+            if (!res.ok) throw new Error("Login failed.");
+            return res.json();
         }
+
+        document.getElementById("login-btn").addEventListener("click", async () => {
+            errorEl.textContent = "";
+            try {
+                const optionsJSON = await post("/admin/login/options");
+                const response = await SimpleWebAuthnBrowser.startAuthentication({ optionsJSON });
+                await post("/admin/login/verify", response);
+                window.location.href = "/admin";
+            } catch (err) {
+                errorEl.textContent = err.message || "Login failed.";
+            }
+        });
     </script>
 </body>
 
