@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatClock } from "../public/js/clock-format.js";
+import { formatClock } from "../src/client/clock-format";
 
 describe("with days", () => {
     test("formats DD:HH:MM:SS", () => {

@@ -3,7 +3,7 @@
 
 /* Tailwind only generates classes it finds in these files. */
 @source "../../views";
-@source "../../public/js";
+@source "../client";
 
 body {
     font-family: 'Share Tech Mono', monospace;

@@ -1,0 +1,10 @@
+{
+  // The browser code: same strictness as the server, but with the DOM and without Bun's types.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": ["."],
+  "exclude": []
+}

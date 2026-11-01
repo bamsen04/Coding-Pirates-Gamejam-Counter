@@ -1,7 +1,7 @@
-import { onAction } from "./events.js";
+import { onAction } from "./events";
 
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const ctx = new AudioCtx();
+const AudioContextClass = window.AudioContext ?? window.webkitAudioContext!;
+const ctx = new AudioContextClass();
 
 // Called by the start screen: its click is the interaction browsers require before audio may play.
 export async function resumeAudio() {
@@ -14,9 +14,7 @@ export async function resumeAudio() {
 
 // Browsers keep audio suspended until the user interacts with the page.
 const unlock = () => {
-    if (ctx.state === "suspended") {
-        ctx.resume();
-    }
+    if (ctx.state === "suspended") ctx.resume();
 };
 window.addEventListener("click", unlock);
 window.addEventListener("keydown", unlock);
@@ -47,7 +45,14 @@ for (let i = 0; i < noiseData.length; i++) {
 }
 
 // Simple enveloped note
-function note(type, freq, start, duration, peak, destination) {
+function note(
+    type: OscillatorType,
+    freq: number,
+    start: number,
+    duration: number,
+    peak: number,
+    destination: AudioNode = master,
+) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type;
@@ -56,11 +61,12 @@ function note(type, freq, start, duration, peak, destination) {
     gain.gain.exponentialRampToValueAtTime(peak, start + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     osc.connect(gain);
-    gain.connect(destination || master);
+    gain.connect(destination);
     osc.start(start);
     osc.stop(start + duration + 0.02);
 }
 
+// The countdown: a short click, once per second
 function tick() {
     const now = ctx.currentTime;
 
@@ -95,8 +101,8 @@ function tick() {
     noise.stop(now + 0.02);
 }
 
-// Last 10 seconds: a beep on top of the tick, higher for the final 3
-function countdownBeep(secondsLeft) {
+// For the last seconds: a beep, higher for the final 3
+function countdownBeep(secondsLeft: number) {
     const now = ctx.currentTime;
     if (secondsLeft <= 3) {
         note("square", 1320, now, 0.18, 0.25);
@@ -105,8 +111,8 @@ function countdownBeep(secondsLeft) {
     }
 }
 
-// At 00:00:00: cannon pop, low thump, rising fanfare, held chord, sparkles
-function finale() {
+// Cannon pop, low thump, rising fanfare, held chord, sparkles
+function fanfare() {
     const now = ctx.currentTime;
 
     const pop = ctx.createBufferSource();
@@ -154,12 +160,10 @@ function finale() {
 }
 
 // Nothing plays until the browser has let the page make sound (see unlock above).
-onAction("tick", () => {
-    if (ctx.state === "running") tick();
-});
-onAction("beep", (secondsLeft) => {
-    if (ctx.state === "running") countdownBeep(secondsLeft);
-});
-onAction("fanfare", () => {
-    if (ctx.state === "running") finale();
-});
+const ifRunning = (play: (secondsLeft: number) => void) => (secondsLeft: number) => {
+    if (ctx.state === "running") play(secondsLeft);
+};
+
+onAction("tick", ifRunning(tick));
+onAction("beep", ifRunning(countdownBeep));
+onAction("fanfare", ifRunning(fanfare));

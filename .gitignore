@@ -39,3 +39,4 @@ enroll-tokens.json
 
 # built tailwind output
 public/app.css
+public/js

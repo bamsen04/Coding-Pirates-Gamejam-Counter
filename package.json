@@ -18,7 +18,11 @@
     "enroll": "bun run scripts/enroll.ts",
     "test": "bun test",
     "build:css": "tailwindcss -i src/styles/app.css -o public/app.css --minify",
-    "dev:css": "tailwindcss -i src/styles/app.css -o public/app.css --watch"
+    "dev:css": "tailwindcss -i src/styles/app.css -o public/app.css --watch",
+    "build:js": "bun build src/client/index.ts src/client/admin.ts src/client/admin-login.ts src/client/admin-enroll.ts --outdir public/js --minify",
+    "dev:js": "bun build src/client/index.ts src/client/admin.ts src/client/admin-login.ts src/client/admin-enroll.ts --outdir public/js --watch",
+    "build": "bun run build:css && bun run build:js",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/client"
   },
   "dependencies": {
     "@simplewebauthn/server": "^14.0.3",

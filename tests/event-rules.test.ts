@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isActive, shouldFire } from "../public/js/event-rules.js";
+import { isActive, shouldFire } from "../src/client/event-rules";
 
 const point = (at: number) => ({ action: "confetti", at, until: null });
 const range = (at: number | null, until: number) => ({ action: "tick", at, until });

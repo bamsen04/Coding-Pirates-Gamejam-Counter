@@ -1,4 +1,5 @@
 {
+  "exclude": ["src/client", "public", "node_modules"],
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext"],
