@@ -36,7 +36,7 @@
         }
 
         .clock-desktop {
-            font-size: clamp(3rem, 7vw, 8rem);
+            font-size: clamp(2rem, 4.5vw, 6rem);
         }
 
         /* CSS-only seven-segment digit display */
@@ -156,7 +156,7 @@
             Coding Pirates Gamejam
         </h1>
         <div id="clock-mobile"
-            class="clock-display text-5xl leading-none bg-white border-4 border-red-400 px-4 py-3 flex items-center justify-center">
+            class="clock-display text-4xl leading-none bg-white border-4 border-red-400 px-4 py-3 flex items-center justify-center">
         </div>
         <div id="bubbles-mobile" class="w-full flex flex-col gap-3"></div>
     </div>
@@ -199,8 +199,8 @@
     </div>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script>
-        const TARGET_DATE = new Date(2026, 11 - 1, 1, 13, 0, 0).getTime();
-        const MAX_MS = 24 * 60 * 60 * 1000;
+        const TARGET_DATE = new Date(2027, 11 - 1, 1, 13, 0, 0).getTime();
+        const MAX_MS = 24 * 60 * 60 * 1000 * 10000000;
 
         const clockEls = document.querySelectorAll(".clock-display");
 
@@ -241,11 +241,12 @@
             if (remaining > MAX_MS) remaining = MAX_MS;
 
             const totalSeconds = Math.floor(remaining / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
 
-            renderDigits(`${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`);
+            renderDigits(`${pad2(days)}:${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`);
         }
 
         updateClock();
@@ -438,7 +439,324 @@
 
         updateFabState();
         setInterval(updateFabState, 1000);
+
+(() => {
+    // Clean up an earlier version if this was pasted before
+    if (window.__tickCtx) {
+        window.__tickCtx.close();
+    }
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+    window.__tickCtx = ctx;
+
+    const unlock = () => {
+        if (ctx.state === "suspended") {
+            ctx.resume();
+        }
+    };
+    window.addEventListener("click", unlock);
+    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
+
+    // Gentle compressor so everything stays smooth and never harsh
+    const master = ctx.createDynamicsCompressor();
+    master.threshold.value = -18;
+    master.ratio.value = 4;
+
+    const volume = ctx.createGain();
+    volume.gain.value = 0.7;
+
+    master.connect(volume);
+    volume.connect(ctx.destination);
+
+    // Warm lowpass bus for the fanfare so the sawtooth is not piercing
+    const fanfareBus = ctx.createBiquadFilter();
+    fanfareBus.type = "lowpass";
+    fanfareBus.frequency.value = 3000;
+    fanfareBus.connect(master);
+
+    // One second of noise, reused by the tick click and the finale pop
+    const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) {
+        noiseData[i] = Math.random() * 2 - 1;
+    }
+
+    // Simple enveloped note
+    const note = (type, freq, start, duration, peak, destination) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(peak, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain);
+        gain.connect(destination || master);
+        osc.start(start);
+        osc.stop(start + duration + 0.02);
+    };
+
+    const tick = () => {
+        const now = ctx.currentTime;
+
+        // Body: triangle wave dropping from 1200 Hz to 600 Hz
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
+        oscGain.gain.setValueAtTime(0.0001, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.5, now + 0.002);
+        oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+        osc.connect(oscGain);
+        oscGain.connect(master);
+        osc.start(now);
+        osc.stop(now + 0.08);
+
+        // Click: filtered noise burst on the attack
+        const noise = ctx.createBufferSource();
+        const noiseFilter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        noise.buffer = noiseBuffer;
+        noiseFilter.type = "bandpass";
+        noiseFilter.frequency.value = 2200;
+        noiseFilter.Q.value = 1.5;
+        noiseGain.gain.setValueAtTime(0.35, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(master);
+        noise.start(now);
+        noise.stop(now + 0.02);
+    };
+
+    // Last 10 seconds: a beep on top of the tick, higher for the final 3
+    const countdownBeep = (secondsLeft) => {
+        const now = ctx.currentTime;
+        if (secondsLeft <= 3) {
+            note("square", 1320, now, 0.18, 0.25);
+        } else {
+            note("sine", 880, now, 0.12, 0.25);
+        }
+    };
+
+    // At 00:00:00: cannon pop, low thump, rising fanfare, held chord, sparkles
+    const finale = () => {
+        const now = ctx.currentTime;
+
+        const pop = ctx.createBufferSource();
+        const popFilter = ctx.createBiquadFilter();
+        const popGain = ctx.createGain();
+        pop.buffer = noiseBuffer;
+        popFilter.type = "lowpass";
+        popFilter.frequency.setValueAtTime(6000, now);
+        popFilter.frequency.exponentialRampToValueAtTime(300, now + 0.25);
+        popGain.gain.setValueAtTime(0.9, now);
+        popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+        pop.connect(popFilter);
+        popFilter.connect(popGain);
+        popGain.connect(master);
+        pop.start(now);
+        pop.stop(now + 0.35);
+
+        const thump = ctx.createOscillator();
+        const thumpGain = ctx.createGain();
+        thump.type = "sine";
+        thump.frequency.setValueAtTime(160, now);
+        thump.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+        thumpGain.gain.setValueAtTime(0.9, now);
+        thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        thump.connect(thumpGain);
+        thumpGain.connect(master);
+        thump.start(now);
+        thump.stop(now + 0.4);
+
+        // Rising arpeggio: C5 E5 G5 C6
+        const chord = [523.25, 659.25, 783.99, 1046.5];
+        chord.forEach((freq, i) => {
+            note("sawtooth", freq, now + 0.15 + i * 0.12, 0.25, 0.18, fanfareBus);
+        });
+
+        // Held final chord
+        chord.forEach((freq) => {
+            note("triangle", freq, now + 0.15 + chord.length * 0.12, 1.2, 0.2, fanfareBus);
+        });
+
+        // Sparkles that match the confetti rain
+        for (let i = 0; i < 14; i++) {
+            note("sine", 1800 + Math.random() * 2400, now + 0.3 + Math.random() * 1.4, 0.15, 0.08);
+        }
+    };
+
+    if (!window.__originalRenderDigits) {
+        window.__originalRenderDigits = window.renderDigits;
+    }
+
+    let lastStr = null;
+
+    window.renderDigits = (str) => {
+        window.__originalRenderDigits(str);
+
+        if (ctx.state === "running") {
+            if (str === "00:00:00:00") {
+                // No tick at zero. Finale only on a live transition.
+                if (lastStr !== null && lastStr !== "00:00:00:00") {
+                    finale();
+                }
+            } else {
+                const parts = str.split(":").map(Number);
+                const total = parts[0] * 86400 + parts[1] * 3600 + parts[2] * 60 + parts[3];
+                tick();
+                if (total <= 10) {
+                    countdownBeep(total);
+                }
+            }
+        }
+
+        lastStr = str;
+    };
+
+    console.log("Tick sound active. Click anywhere on the page once to enable audio.");
+})();
     </script>
+<script>
+    (() => {
+        const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#0ea5e9", "#a855f7", "#ec4899", "#facc15"];
+        const GRAVITY = 0.28;
+        const DRAG = 0.985;
+
+        const canvas = document.createElement("canvas");
+        canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;";
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext("2d");
+
+        let width = 0;
+        let height = 0;
+        const resize = () => {
+            const dpr = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        resize();
+        window.addEventListener("resize", resize);
+
+        let particles = [];
+        let rafId = null;
+        let lastTime = 0;
+        let rainUntil = 0;
+
+        const spawn = (x, y, angle, speed, spread) => {
+            const a = angle + (Math.random() - 0.5) * spread;
+            const s = speed * (0.5 + Math.random() * 0.7);
+            particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(a) * s,
+                vy: Math.sin(a) * s,
+                size: 6 + Math.random() * 8,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                round: Math.random() < 0.25,
+                rotation: Math.random() * Math.PI * 2,
+                spin: (Math.random() - 0.5) * 0.3,
+                tilt: Math.random() * Math.PI * 2,
+                tiltSpeed: 0.1 + Math.random() * 0.2,
+                life: 180 + Math.random() * 80
+            });
+        };
+
+        const frame = (now) => {
+            const dt = Math.min((now - lastTime) / 16.67, 3);
+            lastTime = now;
+
+            // Confetti rain from the top while the rain window is open
+            if (now < rainUntil) {
+                for (let i = 0; i < 3; i++) {
+                    spawn(Math.random() * width, -20, Math.PI / 2, 3, 0.6);
+                }
+            }
+
+            ctx.clearRect(0, 0, width, height);
+
+            particles = particles.filter((p) => {
+                p.vy += GRAVITY * dt;
+                p.vx *= Math.pow(DRAG, dt);
+                p.vy *= Math.pow(DRAG, dt);
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.rotation += p.spin * dt;
+                p.tilt += p.tiltSpeed * dt;
+                p.life -= dt;
+
+                if (p.life <= 0 || p.y > height + 30) {
+                    return false;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, p.life / 40);
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.scale(1, Math.cos(p.tilt));
+                ctx.fillStyle = p.color;
+                if (p.round) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                }
+                ctx.restore();
+                return true;
+            });
+
+            if (particles.length > 0 || now < rainUntil) {
+                rafId = requestAnimationFrame(frame);
+            } else {
+                rafId = null;
+                ctx.clearRect(0, 0, width, height);
+            }
+        };
+
+        const launchConfetti = () => {
+            // Two cannons from the bottom corners, aimed up and inward
+            for (let i = 0; i < 90; i++) {
+                spawn(0, height, -Math.PI / 2 + 0.55, 22, 0.6);
+                spawn(width, height, -Math.PI / 2 - 0.55, 22, 0.6);
+            }
+            // Centre burst
+            for (let i = 0; i < 50; i++) {
+                spawn(width / 2, height * 0.6, -Math.PI / 2, 18, 1.6);
+            }
+            rainUntil = performance.now() + 1500;
+            if (rafId === null) {
+                lastTime = performance.now();
+                rafId = requestAnimationFrame(frame);
+            }
+        };
+
+        // Fire once when the clock goes from counting down to 00:00:00.
+        // Loading the page after the timer already ended does not fire it.
+        let lastStr = null;
+        let fired = false;
+        const originalRenderDigits = window.renderDigits;
+
+        window.renderDigits = (str) => {
+            originalRenderDigits(str);
+            if (str === "00:00:00:00" && lastStr !== null && lastStr !== "00:00:00:00" && !fired) {
+                fired = true;
+                launchConfetti();
+            }
+            lastStr = str;
+        };
+
+        // Handy for testing from the console: launchConfetti();
+        window.launchConfetti = launchConfetti;
+    })();
+</script>
 </body>
 
 </html>
