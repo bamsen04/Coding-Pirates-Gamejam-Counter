@@ -4,18 +4,24 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
     "@types/bun": "latest",
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "@types/nunjucks": "^3.2.6",
+    "tailwindcss": "^4.3.3"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "scripts": {
     "server": "bun run src/index.ts",
-    "enroll": "bun run scripts/enroll.ts"
+    "enroll": "bun run scripts/enroll.ts",
+    "build:css": "tailwindcss -i src/styles/app.css -o public/app.css --minify",
+    "dev:css": "tailwindcss -i src/styles/app.css -o public/app.css --watch"
   },
   "dependencies": {
     "@simplewebauthn/server": "^14.0.3",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "nunjucks": "^3.2.4"
   }
 }

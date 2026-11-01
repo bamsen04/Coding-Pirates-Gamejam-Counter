@@ -15,6 +15,8 @@ export const config = {
     },
     turnstile: {
         disabled: disableTurnstile,
+        // Public widget key (not a secret), shown in the page.
+        siteKey: process.env.TURNSTILE_SITE_KEY ?? "0x4AAAAAAFuH0h9YAh9IFnDd",
         // Not needed when Turnstile is disabled.
         secret: disableTurnstile ? undefined : required("TURNSTILE_SECRET_KEY"),
     },

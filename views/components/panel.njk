@@ -1,0 +1,14 @@
+{# Bordered admin section with a heading. Pass `countId` to get a counter badge next to the heading. #}
+{% macro panel(title, countId="") %}
+<section class="border-4 border-black p-6 space-y-4">
+    {% if countId %}
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold uppercase tracking-widest">{{ title }}</h2>
+        <span id="{{ countId }}" class="text-sm text-slate-500"></span>
+    </div>
+    {% else %}
+    <h2 class="text-lg font-bold uppercase tracking-widest">{{ title }}</h2>
+    {% endif %}
+    {{ caller() }}
+</section>
+{% endmacro %}

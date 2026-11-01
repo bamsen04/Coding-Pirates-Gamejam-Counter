@@ -1,0 +1,131 @@
+html,
+body {
+    background-color: #fff;
+    color: #000;
+}
+
+.bubble {
+    animation: float 6s ease-in-out infinite backwards;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.clock-desktop {
+    font-size: clamp(2rem, 4.5vw, 6rem);
+}
+
+/* CSS-only seven-segment digit display */
+.seg-digit {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    width: 0.62em;
+    height: 1em;
+    margin: 0 0.06em;
+}
+
+.seg {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.08);
+    transition: background 0.08s linear, box-shadow 0.08s linear;
+}
+
+.seg.on {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444, 0 0 18px rgba(239, 68, 68, 0.8);
+}
+
+.seg-h {
+    clip-path: polygon(8% 0%, 92% 0%, 100% 50%, 92% 100%, 8% 100%, 0% 50%);
+}
+
+.seg-v {
+    clip-path: polygon(0% 10%, 50% 0%, 100% 10%, 100% 90%, 50% 100%, 0% 90%);
+}
+
+.seg-a {
+    top: 0%;
+    left: 10%;
+    width: 80%;
+    height: 9%;
+}
+
+.seg-g {
+    top: 45.5%;
+    left: 10%;
+    width: 80%;
+    height: 9%;
+}
+
+.seg-d {
+    top: 91%;
+    left: 10%;
+    width: 80%;
+    height: 9%;
+}
+
+.seg-f {
+    top: 4%;
+    left: 0%;
+    width: 13%;
+    height: 43%;
+}
+
+.seg-b {
+    top: 4%;
+    right: 0%;
+    width: 13%;
+    height: 43%;
+}
+
+.seg-e {
+    top: 53%;
+    left: 0%;
+    width: 13%;
+    height: 43%;
+}
+
+.seg-c {
+    top: 53%;
+    right: 0%;
+    width: 13%;
+    height: 43%;
+}
+
+.seg-colon {
+    display: inline-block;
+    position: relative;
+    width: 0.22em;
+    height: 1em;
+    vertical-align: middle;
+}
+
+.seg-colon::before,
+.seg-colon::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 0.16em;
+    height: 0.16em;
+    margin-left: -0.08em;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.seg-colon::before {
+    top: 28%;
+}
+
+.seg-colon::after {
+    top: 62%;
+}

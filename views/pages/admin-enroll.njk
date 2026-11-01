@@ -1,0 +1,21 @@
+{% extends "layouts/base.njk" %}
+{% from "components/button.njk" import button %}
+{% from "components/auth-card.njk" import authCard %}
+
+{% set title = "Register passkey | CP Gamejam" %}
+{% set bodyClass = "min-h-screen bg-white text-slate-800 flex items-center justify-center px-4" %}
+
+{% block head %}
+<script src="https://unpkg.com/@simplewebauthn/browser@13.1.0/dist/bundle/index.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+{% call authCard("Register passkey") %}
+    {{ button("Register passkey", id="register-btn", full=true) }}
+    <p id="status" class="text-sm text-red-500"></p>
+{% endcall %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/admin-enroll.js"></script>
+{% endblock %}

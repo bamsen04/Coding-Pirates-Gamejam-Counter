@@ -1,0 +1,7 @@
+{# Small centered card used by the admin login and enroll pages. #}
+{% macro authCard(title) %}
+<div class="w-full max-w-sm border-4 border-black p-6 space-y-4">
+    <h1 class="text-lg font-bold uppercase tracking-widest">{{ title }}</h1>
+    {{ caller() }}
+</div>
+{% endmacro %}

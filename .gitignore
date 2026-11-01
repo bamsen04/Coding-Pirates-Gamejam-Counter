@@ -36,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # passkey data
 passkeys.json
 enroll-tokens.json
+
+# built tailwind output
+public/app.css

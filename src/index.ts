@@ -1,4 +1,5 @@
 import express from "express";
+import nunjucks from "nunjucks";
 import { join } from "path";
 import {
     type AuthenticatorTransport,
@@ -24,6 +25,9 @@ import { migrate } from "./migrate";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(join(import.meta.dir, "../public")));
+
+nunjucks.configure(join(import.meta.dir, "../views"), { express: app, autoescape: true });
 
 await migrate(db);
 
@@ -98,26 +102,14 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
     res.redirect("/admin/login");
 }
 
-function getTemplatePath(template: string) {
-    return join(import.meta.dir, "../templates", template);
-}
-
-app.get("/", async (req, res) => {
-    if (!turnstile_disabled) {
-        res.sendFile(getTemplatePath("index.html"));
-        return;
-    }
-    // Remove the widget and its script so the form doesn't show a captcha that is never checked.
-    const html = await Bun.file(getTemplatePath("index.html")).text();
-    res.type("html").send(
-        html
-            .replace(/<div class="cf-turnstile"[^>]*><\/div>/, "")
-            .replace(/<script src="https:\/\/challenges\.cloudflare\.com[^>]*><\/script>/, ""),
-    );
+app.get("/", (req, res) => {
+    res.render("pages/index.njk", {
+        turnstile: { enabled: !turnstile_disabled, siteKey: config.turnstile.siteKey },
+    });
 });
 
 app.get("/admin/login", (req, res) => {
-    res.sendFile(getTemplatePath("admin-login.html"));
+    res.render("pages/admin-login.njk");
 });
 
 app.post("/admin/login/options", loginRateLimit, async (req, res) => {
@@ -187,7 +179,7 @@ app.post("/admin/login/verify", loginRateLimit, async (req, res) => {
 });
 
 app.get("/admin/enroll", (req, res) => {
-    res.sendFile(getTemplatePath("admin-enroll.html"));
+    res.render("pages/admin-enroll.njk");
 });
 
 app.post("/admin/enroll/options", loginRateLimit, async (req, res) => {
@@ -249,7 +241,7 @@ app.post("/admin/enroll/verify", loginRateLimit, async (req, res) => {
 });
 
 app.get("/admin", requireAdmin, (req, res) => {
-    res.sendFile(getTemplatePath("admin.html"));
+    res.render("pages/admin.njk");
 })
 
 app.get("/messages", async (req, res) => {
