@@ -8,32 +8,31 @@ import {
     verifyRegistrationResponse,
 } from "@simplewebauthn/server";
 import {
+    addPasskey,
     consumeEnrollToken,
+    getPasskey,
+    getUserId,
     isValidEnrollToken,
-    loadPasskeys,
-    ORIGIN,
-    RP_ID,
-    RP_NAME,
-    savePasskeys,
-} from "./passkeys";
+    listPasskeys,
+    updateCounter,
+} from "./services/passkeys";
+import { config } from "./config";
+import db from "./services/db";
+import { addMessage, approveMessage, getApproved, getPending, rejectMessage, removeMessage } from "./services/messages";
+import { migrate } from "./migrate";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const turnstile_secret = process.env.TURNSTILE_SECRET_KEY;
+await migrate(db);
 
-interface Message {
-    id: string;
-    author: string;
-    text: string;
-    sentAt: number;
-}
+const { origin: ORIGIN, rpId: RP_ID, rpName: RP_NAME } = config;
+const turnstile_secret = config.turnstile.secret;
+const turnstile_disabled = config.turnstile.disabled;
+if (turnstile_disabled) console.warn("Turnstile is DISABLED, message spam protection is off");
 
 let messageTtlMs = 30 * 60 * 1000;
-
-const approvedMessages: Message[] = [];
-const messageQueue: Message[] = [];
 
 const validSessions = new Set<string>();
 const SESSION_COOKIE = "admin_session";
@@ -103,8 +102,18 @@ function getTemplatePath(template: string) {
     return join(import.meta.dir, "../templates", template);
 }
 
-app.get("/", (req, res) => {
-    res.sendFile(getTemplatePath("index.html"));
+app.get("/", async (req, res) => {
+    if (!turnstile_disabled) {
+        res.sendFile(getTemplatePath("index.html"));
+        return;
+    }
+    // Remove the widget and its script so the form doesn't show a captcha that is never checked.
+    const html = await Bun.file(getTemplatePath("index.html")).text();
+    res.type("html").send(
+        html
+            .replace(/<div class="cf-turnstile"[^>]*><\/div>/, "")
+            .replace(/<script src="https:\/\/challenges\.cloudflare\.com[^>]*><\/script>/, ""),
+    );
 });
 
 app.get("/admin/login", (req, res) => {
@@ -112,15 +121,15 @@ app.get("/admin/login", (req, res) => {
 });
 
 app.post("/admin/login/options", loginRateLimit, async (req, res) => {
-    const store = loadPasskeys();
-    if (store.credentials.length === 0) {
+    const credentials = await listPasskeys();
+    if (credentials.length === 0) {
         res.status(400).json({ status: "no_passkeys" });
         return;
     }
     const options = await generateAuthenticationOptions({
         rpID: RP_ID,
         userVerification: "preferred",
-        allowCredentials: store.credentials.map((c) => ({ id: c.id, transports: c.transports })),
+        allowCredentials: credentials.map((c) => ({ id: c.id, transports: c.transports })),
     });
     const challengeId = crypto.randomUUID();
     loginChallenges.set(challengeId, { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL_MS });
@@ -137,8 +146,7 @@ app.post("/admin/login/verify", loginRateLimit, async (req, res) => {
         return;
     }
 
-    const store = loadPasskeys();
-    const passkey = store.credentials.find((c) => c.id === req.body?.id);
+    const passkey = await getPasskey(req.body?.id);
     if (!passkey) {
         res.status(401).json({ status: "unknown_passkey" });
         return;
@@ -161,8 +169,7 @@ app.post("/admin/login/verify", loginRateLimit, async (req, res) => {
             res.status(401).json({ status: "verification_failed" });
             return;
         }
-        passkey.counter = verification.authenticationInfo.newCounter;
-        savePasskeys(store);
+        await updateCounter(passkey.id, verification.authenticationInfo.newCounter);
     } catch (err) {
         console.error("passkey login failed", err);
         res.status(401).json({ status: "verification_failed" });
@@ -185,18 +192,17 @@ app.get("/admin/enroll", (req, res) => {
 
 app.post("/admin/enroll/options", loginRateLimit, async (req, res) => {
     const { token } = req.body;
-    if (!isValidEnrollToken(token)) {
+    if (!(await isValidEnrollToken(token))) {
         res.status(403).json({ status: "invalid_token" });
         return;
     }
-    const store = loadPasskeys();
     const options = await generateRegistrationOptions({
         rpName: RP_NAME,
         rpID: RP_ID,
         userName: "admin",
-        userID: new TextEncoder().encode(store.userId),
+        userID: new TextEncoder().encode(await getUserId()),
         attestationType: "none",
-        excludeCredentials: store.credentials.map((c) => ({ id: c.id, transports: c.transports })),
+        excludeCredentials: (await listPasskeys()).map((c) => ({ id: c.id, transports: c.transports })),
         authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
     });
     enrollChallenges.set(token, { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL_MS });
@@ -206,7 +212,7 @@ app.post("/admin/enroll/options", loginRateLimit, async (req, res) => {
 app.post("/admin/enroll/verify", loginRateLimit, async (req, res) => {
     const { token, response } = req.body;
     const entry = typeof token === "string" ? enrollChallenges.get(token) : undefined;
-    if (!isValidEnrollToken(token) || !entry || entry.expires < Date.now()) {
+    if (!(await isValidEnrollToken(token)) || !entry || entry.expires < Date.now()) {
         res.status(403).json({ status: "invalid_token" });
         return;
     }
@@ -223,16 +229,18 @@ app.post("/admin/enroll/verify", loginRateLimit, async (req, res) => {
             res.status(400).json({ status: "verification_failed" });
             return;
         }
+        // Burn the token first so a single link can't register two passkeys.
+        if (!(await consumeEnrollToken(token))) {
+            res.status(403).json({ status: "invalid_token" });
+            return;
+        }
         const { credential } = verification.registrationInfo;
-        const store = loadPasskeys();
-        store.credentials.push({
+        await addPasskey(await getUserId(), {
             id: credential.id,
             publicKey: Buffer.from(credential.publicKey).toString("base64url"),
             counter: credential.counter,
-            transports: credential.transports as AuthenticatorTransport[] | undefined,
+            transports: (credential.transports ?? []) as AuthenticatorTransport[],
         });
-        savePasskeys(store);
-        consumeEnrollToken(token);
         res.json({ status: "ok" });
     } catch (err) {
         console.error("passkey enrollment failed", err);
@@ -244,15 +252,12 @@ app.get("/admin", requireAdmin, (req, res) => {
     res.sendFile(getTemplatePath("admin.html"));
 })
 
-app.get("/messages", (req, res) => {
-    const cutoff = Date.now() - messageTtlMs;
-    while (approvedMessages.length > 0 && approvedMessages[0]!.sentAt < cutoff) {
-        approvedMessages.shift();
-    }
-    res.json(approvedMessages);
+app.get("/messages", async (req, res) => {
+    res.json(await getApproved(messageTtlMs));
 });
 
 async function verifyTurnstile(token: unknown, ip: string | undefined): Promise<boolean> {
+    if (turnstile_disabled) return true;
     if (!turnstile_secret || typeof token !== "string" || !token) return false;
     const body = new URLSearchParams({ secret: turnstile_secret, response: token });
     if (ip) body.set("remoteip", ip);
@@ -276,44 +281,31 @@ app.post("/messages", async (req, res) => {
         res.status(403).json({ status: "turnstile_failed" });
         return;
     }
-    messageQueue.push({ id: crypto.randomUUID(), author: author, text: message, sentAt: Date.now() });
+    if (typeof author !== "string" || typeof message !== "string" || !author.trim() || !message.trim()) {
+        res.status(400).json({ status: "invalid_message" });
+        return;
+    }
+    await addMessage(author, message);
     res.json({ status: "pending" });
 });
 
-app.get("/admin/api/messages", requireAdmin, (req, res) => {
-    res.json({ pending: messageQueue, approved: approvedMessages });
+app.get("/admin/api/messages", requireAdmin, async (req, res) => {
+    res.json({ pending: await getPending(), approved: await getApproved(messageTtlMs) });
 });
 
-app.post("/admin/api/messages/:id/approve", requireAdmin, (req, res) => {
-    const index = messageQueue.findIndex((m) => m.id === req.params.id);
-    if (index === -1) {
-        res.status(404).json({ status: "not_found" });
-        return;
-    }
-    const [message] = messageQueue.splice(index, 1);
-    message!.sentAt = Date.now();
-    approvedMessages.push(message!);
-    res.json({ status: "ok" });
+app.post("/admin/api/messages/:id/approve", requireAdmin, async (req, res) => {
+    const found = await approveMessage(Number(req.params.id));
+    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
 });
 
-app.post("/admin/api/messages/:id/reject", requireAdmin, (req, res) => {
-    const index = messageQueue.findIndex((m) => m.id === req.params.id);
-    if (index === -1) {
-        res.status(404).json({ status: "not_found" });
-        return;
-    }
-    messageQueue.splice(index, 1);
-    res.json({ status: "ok" });
+app.post("/admin/api/messages/:id/reject", requireAdmin, async (req, res) => {
+    const found = await rejectMessage(Number(req.params.id));
+    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
 });
 
-app.delete("/admin/api/messages/:id", requireAdmin, (req, res) => {
-    const index = approvedMessages.findIndex((m) => m.id === req.params.id);
-    if (index === -1) {
-        res.status(404).json({ status: "not_found" });
-        return;
-    }
-    approvedMessages.splice(index, 1);
-    res.json({ status: "ok" });
+app.delete("/admin/api/messages/:id", requireAdmin, async (req, res) => {
+    const found = await removeMessage(Number(req.params.id));
+    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
 });
 
 app.get("/admin/api/config", requireAdmin, (req, res) => {

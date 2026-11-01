@@ -11,7 +11,7 @@
     "typescript": "^5"
   },
   "scripts": {
-    "dev": "bun run src/index.ts",
+    "server": "bun run src/index.ts",
     "enroll": "bun run scripts/enroll.ts"
   },
   "dependencies": {
