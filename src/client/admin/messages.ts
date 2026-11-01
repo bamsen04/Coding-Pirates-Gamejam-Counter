@@ -7,6 +7,8 @@ const pendingListEl = byId("pending-list");
 const approvedListEl = byId("approved-list");
 const pendingCountEl = byId("pending-count");
 const approvedCountEl = byId("approved-count");
+const pendingBadge = byId("pending-badge"); // on the Beskeder tab, so you see it from the other tabs
+const TITLE = "Admin | CP Gamejam";
 
 // A beep when a new message arrives, so you notice it. Browsers only allow audio after the page
 // has been clicked or typed in once.
@@ -51,7 +53,7 @@ function playBeep() {
 function messageRow(message: Message, actions: HTMLElement[]): HTMLElement {
     const author = document.createElement("div");
     author.className = "text-xs font-semibold text-slate-500 mb-1 truncate";
-    author.textContent = `${message.author} · ${new Date(message.sentAt).toLocaleTimeString()}`;
+    author.textContent = `${message.author} (${message.label}) · ${new Date(message.sentAt).toLocaleTimeString()}`;
 
     const text = document.createElement("div");
     text.className = "text-sm break-words";
@@ -88,6 +90,10 @@ async function loadMessages() {
 
         if (knownPendingIds && pending.some((m) => !knownPendingIds!.has(m.id))) playBeep();
         knownPendingIds = new Set(pending.map((m) => m.id));
+
+        pendingBadge.textContent = String(pending.length);
+        pendingBadge.classList.toggle("hidden", pending.length === 0);
+        document.title = pending.length > 0 ? `(${pending.length}) ${TITLE}` : TITLE;
 
         pendingCountEl.textContent = String(pending.length);
         approvedCountEl.textContent = String(approved.length);

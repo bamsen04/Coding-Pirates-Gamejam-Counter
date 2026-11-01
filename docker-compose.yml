@@ -13,6 +13,7 @@ services:
       DISABLE_TURNSTILE: ${DISABLE_TURNSTILE:-false}
       RP_ID: ${RP_ID:-localhost}
       ORIGIN: ${ORIGIN:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
     depends_on:
       db:
         condition: service_healthy

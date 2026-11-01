@@ -10,6 +10,7 @@ import { listEvents } from "./services/events";
 import { getMaxMs, getShowDays, getTargetDate } from "./services/settings";
 
 const app = express();
+app.set("trust proxy", config.trustProxy);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(import.meta.dir, "../public")));

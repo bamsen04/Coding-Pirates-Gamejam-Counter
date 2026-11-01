@@ -18,8 +18,8 @@ type Handler = (req: Request, res: Response) => void | Promise<void>;
 export interface RouteOptions {
     /** Require a logged-in admin session. */
     admin?: boolean;
-    /** Apply the login/enroll rate limit. */
-    rateLimit?: boolean;
+    /** Rate limit it: `true` for the admin login/enroll limit, or pass another limiter. */
+    rateLimit?: boolean | RequestHandler;
 }
 
 interface Route {
@@ -71,7 +71,8 @@ export async function registerApiRoutes(app: Express, dir: string) {
         }
 
         const middleware: RequestHandler[] = [];
-        if (route.options.rateLimit) middleware.push(loginRateLimit);
+        const { rateLimit } = route.options;
+        if (rateLimit) middleware.push(rateLimit === true ? loginRateLimit : rateLimit);
         if (route.options.admin) middleware.push(requireAdmin);
 
         // Express 5 forwards rejected promises from handlers to its error handler.

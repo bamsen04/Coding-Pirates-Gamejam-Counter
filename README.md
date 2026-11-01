@@ -24,7 +24,8 @@ Everything is read from `.env` (see [.env.example](.env.example)) in [src/config
 | `TURNSTILE_SITE_KEY` | The widget's public key, shown in the page. Optional; defaults to the project's current key. |
 | `TURNSTILE_SECRET_KEY` | The widget's private key. Required unless Turnstile is disabled. |
 | `DISABLE_TURNSTILE` | `true` skips the captcha. Development only. |
-| `RP_ID`, `ORIGIN` | Passkeys are bound to these. Set to your real domain and `https://` origin in production. |
+| `RP_ID`, `ORIGIN` | Passkeys are bound to these. Set to your real domain and `https://` origin in production (`ORIGIN="https://countdown.gamejamkbh.dk"`). `ORIGIN` is also the address printed and linked with a QR code on the hold PDFs. |
+| `TRUST_PROXY` | `true` when the app runs behind a reverse proxy, so visitors keep their own IP. Needed for the per-IP limit below. |
 
 ## Enrolling an admin passkey
 
@@ -33,6 +34,21 @@ docker compose run --rm app bun run enroll
 ```
 
 Open the printed link (valid 15 minutes, single use) and register a passkey. Then log in at `/admin/login`.
+
+## Hold and who sends a message
+
+In the admin page, the **Hold** tab makes the teams: "Lav nye koder til alle" creates Hold 1 to N (e.g. 14) plus *frivillig*, each with a random 8-character code (capital letters and digits, no look-alikes, case doesn't matter). "Hent alle som PDF" gives two A4 pages per hold, to print two to a sheet: the front says which hold you are, with a QR code for the site and its address; the back is just the code. Each hold row also has its own PDF.
+
+Pressing + opens a first step, "Er du på et hold?": type the hold's code, or press "Jeg er ikke på et hold". Only then comes the message form, where the name is typed on every message. It then reads *Name (Hold 5)*. Admins and anyone already logged in to a hold skip the first step.
+
+| Sends as | Wait between messages |
+|---|---|
+| A hold | 10 minutes, shared by the whole hold, kept on the server |
+| frivillig | none |
+| Admin (logged in to the admin page) | none |
+| Nobody (*Ingen hold*) | 10 minutes per IP, plus the Turnstile captcha |
+
+Per hold, the admin page can set a different wait (for example 30 minutes, or 0), give the hold a **new code** (the old one stops working), or **ban** it so it can't send. A hold that is banned can still log in but can't send; someone can log out and send as *Ingen hold*, which is limited as above.
 
 ## Tests
 

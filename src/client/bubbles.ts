@@ -27,7 +27,7 @@ function bubble(message: Message, classes: string): HTMLElement {
 
     const author = document.createElement("div");
     author.className = "text-xs font-semibold text-slate-500 mb-1 truncate";
-    author.textContent = message.author;
+    author.textContent = `${message.author} (${message.label})`;
 
     const text = document.createElement("div");
     text.className = "text-sm break-words";

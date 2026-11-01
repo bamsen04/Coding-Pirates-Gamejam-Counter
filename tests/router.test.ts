@@ -3,7 +3,7 @@ import { join } from "path";
 import "./helpers";
 
 const { compareUrls, defineRoute, registerApiRoutes, toUrlPath } = await import("../src/router");
-const { loginRateLimit, requireAdmin } = await import("../src/auth");
+const { holdLoginRateLimit, loginRateLimit, requireAdmin } = await import("../src/auth");
 
 describe("toUrlPath", () => {
     test("maps a file path to a URL", () => {
@@ -59,6 +59,9 @@ describe("registerApiRoutes on src/api", () => {
         expect(routes).toEqual(
             [
                 "GET /events",
+                "GET /me",
+                "POST /hold/login",
+                "POST /hold/logout",
                 "GET /messages",
                 "GET /settings",
                 "POST /messages",
@@ -70,6 +73,13 @@ describe("registerApiRoutes on src/api", () => {
                 "POST /admin/api/messages/:id/reject",
                 "POST /admin/api/events",
                 "DELETE /admin/api/events/:id",
+                "GET /admin/api/holds",
+                "POST /admin/api/holds",
+                "GET /admin/api/holds/pdf",
+                "GET /admin/api/holds/:id/pdf",
+                "POST /admin/api/holds/:id/token",
+                "POST /admin/api/holds/:id/ban",
+                "POST /admin/api/holds/:id/cooldown",
                 "POST /admin/login/options",
                 "POST /admin/login/verify",
                 "POST /admin/enroll/options",
@@ -94,8 +104,13 @@ describe("registerApiRoutes on src/api", () => {
         }
     });
 
-    test("public routes have no middleware", () => {
-        for (const route of registered.filter((r) => !r.url.startsWith("/admin"))) {
+    test("logging in to a hold has its own, roomier rate limit", () => {
+        const login = registered.find((r) => r.url === "/hold/login");
+        expect(login?.middleware).toEqual([holdLoginRateLimit]);
+    });
+
+    test("other public routes have no middleware", () => {
+        for (const route of registered.filter((r) => !r.url.startsWith("/admin") && r.url !== "/hold/login")) {
             expect(route.middleware).toEqual([]);
         }
     });

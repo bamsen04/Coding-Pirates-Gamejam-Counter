@@ -13,32 +13,44 @@ export interface PendingChallenge {
 export const loginChallenges = new Map<string, PendingChallenge>();
 export const enrollChallenges = new Map<string, PendingChallenge>();
 
-// Rate limit for the login/enroll endpoints: per IP, fixed window.
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_MAX_REQUESTS = 20; // a normal login is 2 requests
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+// Rate limits for the login endpoints: per IP, fixed window.
+type Attempts = Map<string, { count: number; resetAt: number }>;
+const allAttempts: Attempts[] = [];
 
-export function loginRateLimit(req: Request, res: Response, next: NextFunction) {
-    const now = Date.now();
-    const key = req.ip ?? "unknown";
-    let entry = loginAttempts.get(key);
-    if (!entry || entry.resetAt <= now) {
-        entry = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
-        loginAttempts.set(key, entry);
-    }
-    entry.count++;
-    if (entry.count > LOGIN_MAX_REQUESTS) {
-        res.set("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
-        res.status(429).json({ status: "rate_limited" });
-        return;
-    }
-    next();
+export function createRateLimit(windowMs: number, maxRequests: number) {
+    const attempts: Attempts = new Map();
+    allAttempts.push(attempts);
+
+    return (req: Request, res: Response, next: NextFunction) => {
+        const now = Date.now();
+        const key = req.ip ?? "unknown";
+        let entry = attempts.get(key);
+        if (!entry || entry.resetAt <= now) {
+            entry = { count: 0, resetAt: now + windowMs };
+            attempts.set(key, entry);
+        }
+        entry.count++;
+        if (entry.count > maxRequests) {
+            res.set("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
+            res.status(429).json({ status: "rate_limited" });
+            return;
+        }
+        next();
+    };
 }
+
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+// Admin login and passkey enrollment. A normal login is 2 requests.
+export const loginRateLimit = createRateLimit(FIFTEEN_MINUTES, 20);
+
+// Logging in to a hold. Roomier: a whole room of players can share one IP.
+export const holdLoginRateLimit = createRateLimit(FIFTEEN_MINUTES, 100);
 
 // Drop expired rate-limit entries and challenges so the maps don't grow forever.
 setInterval(() => {
     const now = Date.now();
-    for (const [k, v] of loginAttempts) if (v.resetAt <= now) loginAttempts.delete(k);
+    for (const attempts of allAttempts) for (const [k, v] of attempts) if (v.resetAt <= now) attempts.delete(k);
     for (const [k, v] of loginChallenges) if (v.expires <= now) loginChallenges.delete(k);
     for (const [k, v] of enrollChallenges) if (v.expires <= now) enrollChallenges.delete(k);
 }, 60 * 1000).unref();
@@ -54,9 +66,13 @@ export function parseCookies(header: string | undefined): Record<string, string>
     return cookies;
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function isAdmin(req: Request): boolean {
     const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
-    if (token && validSessions.has(token)) {
+    return token !== undefined && validSessions.has(token);
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+    if (isAdmin(req)) {
         next();
         return;
     }

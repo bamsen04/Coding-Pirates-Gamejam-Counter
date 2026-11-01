@@ -5,6 +5,16 @@ function required(name: string): string {
 }
 
 const disableTurnstile = process.env.DISABLE_TURNSTILE === "true";
+const origin = process.env.ORIGIN ?? "http://localhost:3000";
+
+// "countdown.gamejamkbh.dk" from "https://countdown.gamejamkbh.dk", for printing.
+function hostOf(url: string): string {
+    try {
+        return new URL(url).host;
+    } catch {
+        return url;
+    }
+}
 
 export const config = {
     mysql: {
@@ -20,8 +30,13 @@ export const config = {
         // Not needed when Turnstile is disabled.
         secret: disableTurnstile ? undefined : required("TURNSTILE_SECRET_KEY"),
     },
+    // Set when the app runs behind a reverse proxy (Caddy, nginx), so req.ip is the visitor's address
+    // and not the proxy's. Matters for the per-IP limit on messages without a hold.
+    trustProxy: process.env.TRUST_PROXY === "true",
     // Passkeys are bound to these. In production set them to your real domain / origin.
     rpId: process.env.RP_ID ?? "localhost",
     rpName: "CP Gamejam",
-    origin: process.env.ORIGIN ?? "http://localhost:3000",
+    origin,
+    // The site's address as people would type it. Printed on the hold PDFs.
+    host: hostOf(origin),
 };
