@@ -24,6 +24,7 @@ RUN bun run build:css
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/package.json .
+COPY --from=prerelease /usr/src/app/tsconfig.json .
 COPY --from=prerelease --chown=bun:bun /usr/src/app/src src
 COPY --from=prerelease /usr/src/app/views views
 COPY --from=prerelease /usr/src/app/public public

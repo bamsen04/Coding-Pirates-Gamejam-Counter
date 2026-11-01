@@ -1,26 +1,11 @@
 import express from "express";
 import nunjucks from "nunjucks";
 import { join } from "path";
-import {
-    type AuthenticatorTransport,
-    generateAuthenticationOptions,
-    generateRegistrationOptions,
-    verifyAuthenticationResponse,
-    verifyRegistrationResponse,
-} from "@simplewebauthn/server";
-import {
-    addPasskey,
-    consumeEnrollToken,
-    getPasskey,
-    getUserId,
-    isValidEnrollToken,
-    listPasskeys,
-    updateCounter,
-} from "./services/passkeys";
+import { requireAdmin } from "./auth";
 import { config } from "./config";
-import db from "./services/db";
-import { addMessage, approveMessage, getApproved, getPending, rejectMessage, removeMessage } from "./services/messages";
 import { migrate } from "./migrate";
+import { registerApiRoutes } from "./router";
+import db from "./services/db";
 
 const app = express();
 app.use(express.json());
@@ -31,289 +16,20 @@ nunjucks.configure(join(import.meta.dir, "../views"), { express: app, autoescape
 
 await migrate(db);
 
-const { origin: ORIGIN, rpId: RP_ID, rpName: RP_NAME } = config;
-const turnstile_secret = config.turnstile.secret;
-const turnstile_disabled = config.turnstile.disabled;
-if (turnstile_disabled) console.warn("Turnstile is DISABLED, message spam protection is off");
+if (config.turnstile.disabled) console.warn("Turnstile is DISABLED, message spam protection is off");
 
-let messageTtlMs = 30 * 60 * 1000;
-
-const validSessions = new Set<string>();
-const SESSION_COOKIE = "admin_session";
-const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
-
-const CHALLENGE_COOKIE = "login_challenge";
-const CHALLENGE_TTL_MS = 5 * 60 * 1000;
-interface PendingChallenge {
-    challenge: string;
-    expires: number;
-}
-const loginChallenges = new Map<string, PendingChallenge>();
-const enrollChallenges = new Map<string, PendingChallenge>();
-
-// Rate limit for the login/enroll endpoints: per IP, fixed window.
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_MAX_REQUESTS = 20; // a normal login is 2 requests
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-
-function loginRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const now = Date.now();
-    const key = req.ip ?? "unknown";
-    let entry = loginAttempts.get(key);
-    if (!entry || entry.resetAt <= now) {
-        entry = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
-        loginAttempts.set(key, entry);
-    }
-    entry.count++;
-    if (entry.count > LOGIN_MAX_REQUESTS) {
-        res.set("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
-        res.status(429).json({ status: "rate_limited" });
-        return;
-    }
-    next();
-}
-
-// Drop expired rate-limit entries and challenges so the maps don't grow forever.
-setInterval(() => {
-    const now = Date.now();
-    for (const [k, v] of loginAttempts) if (v.resetAt <= now) loginAttempts.delete(k);
-    for (const [k, v] of loginChallenges) if (v.expires <= now) loginChallenges.delete(k);
-    for (const [k, v] of enrollChallenges) if (v.expires <= now) enrollChallenges.delete(k);
-}, 60 * 1000).unref();
-
-function parseCookies(header: string | undefined): Record<string, string> {
-    const cookies: Record<string, string> = {};
-    if (!header) return cookies;
-    for (const pair of header.split(";")) {
-        const idx = pair.indexOf("=");
-        if (idx === -1) continue;
-        cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
-    }
-    return cookies;
-}
-
-function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const cookies = parseCookies(req.headers.cookie);
-    const token = cookies[SESSION_COOKIE];
-    if (token && validSessions.has(token)) {
-        next();
-        return;
-    }
-    res.redirect("/admin/login");
-}
-
+// Pages
 app.get("/", (req, res) => {
     res.render("pages/index.njk", {
-        turnstile: { enabled: !turnstile_disabled, siteKey: config.turnstile.siteKey },
+        turnstile: { enabled: !config.turnstile.disabled, siteKey: config.turnstile.siteKey },
     });
 });
+app.get("/admin/login", (req, res) => res.render("pages/admin-login.njk"));
+app.get("/admin/enroll", (req, res) => res.render("pages/admin-enroll.njk"));
+app.get("/admin", requireAdmin, (req, res) => res.render("pages/admin.njk"));
 
-app.get("/admin/login", (req, res) => {
-    res.render("pages/admin-login.njk");
-});
-
-app.post("/admin/login/options", loginRateLimit, async (req, res) => {
-    const credentials = await listPasskeys();
-    if (credentials.length === 0) {
-        res.status(400).json({ status: "no_passkeys" });
-        return;
-    }
-    const options = await generateAuthenticationOptions({
-        rpID: RP_ID,
-        userVerification: "preferred",
-        allowCredentials: credentials.map((c) => ({ id: c.id, transports: c.transports })),
-    });
-    const challengeId = crypto.randomUUID();
-    loginChallenges.set(challengeId, { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL_MS });
-    res.cookie(CHALLENGE_COOKIE, challengeId, { httpOnly: true, sameSite: "strict", maxAge: CHALLENGE_TTL_MS });
-    res.json(options);
-});
-
-app.post("/admin/login/verify", loginRateLimit, async (req, res) => {
-    const challengeId = parseCookies(req.headers.cookie)[CHALLENGE_COOKIE];
-    const entry = challengeId ? loginChallenges.get(challengeId) : undefined;
-    if (challengeId) loginChallenges.delete(challengeId);
-    if (!entry || entry.expires < Date.now()) {
-        res.status(400).json({ status: "challenge_expired" });
-        return;
-    }
-
-    const passkey = await getPasskey(req.body?.id);
-    if (!passkey) {
-        res.status(401).json({ status: "unknown_passkey" });
-        return;
-    }
-
-    try {
-        const verification = await verifyAuthenticationResponse({
-            response: req.body,
-            expectedChallenge: entry.challenge,
-            expectedOrigin: ORIGIN,
-            expectedRPID: RP_ID,
-            credential: {
-                id: passkey.id,
-                publicKey: Buffer.from(passkey.publicKey, "base64url"),
-                counter: passkey.counter,
-                transports: passkey.transports,
-            },
-        });
-        if (!verification.verified) {
-            res.status(401).json({ status: "verification_failed" });
-            return;
-        }
-        await updateCounter(passkey.id, verification.authenticationInfo.newCounter);
-    } catch (err) {
-        console.error("passkey login failed", err);
-        res.status(401).json({ status: "verification_failed" });
-        return;
-    }
-
-    const token = crypto.randomUUID();
-    validSessions.add(token);
-    res.cookie(SESSION_COOKIE, token, {
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: SESSION_MAX_AGE_MS,
-    });
-    res.json({ status: "ok" });
-});
-
-app.get("/admin/enroll", (req, res) => {
-    res.render("pages/admin-enroll.njk");
-});
-
-app.post("/admin/enroll/options", loginRateLimit, async (req, res) => {
-    const { token } = req.body;
-    if (!(await isValidEnrollToken(token))) {
-        res.status(403).json({ status: "invalid_token" });
-        return;
-    }
-    const options = await generateRegistrationOptions({
-        rpName: RP_NAME,
-        rpID: RP_ID,
-        userName: "admin",
-        userID: new TextEncoder().encode(await getUserId()),
-        attestationType: "none",
-        excludeCredentials: (await listPasskeys()).map((c) => ({ id: c.id, transports: c.transports })),
-        authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
-    });
-    enrollChallenges.set(token, { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL_MS });
-    res.json(options);
-});
-
-app.post("/admin/enroll/verify", loginRateLimit, async (req, res) => {
-    const { token, response } = req.body;
-    const entry = typeof token === "string" ? enrollChallenges.get(token) : undefined;
-    if (!(await isValidEnrollToken(token)) || !entry || entry.expires < Date.now()) {
-        res.status(403).json({ status: "invalid_token" });
-        return;
-    }
-    enrollChallenges.delete(token);
-
-    try {
-        const verification = await verifyRegistrationResponse({
-            response,
-            expectedChallenge: entry.challenge,
-            expectedOrigin: ORIGIN,
-            expectedRPID: RP_ID,
-        });
-        if (!verification.verified) {
-            res.status(400).json({ status: "verification_failed" });
-            return;
-        }
-        // Burn the token first so a single link can't register two passkeys.
-        if (!(await consumeEnrollToken(token))) {
-            res.status(403).json({ status: "invalid_token" });
-            return;
-        }
-        const { credential } = verification.registrationInfo;
-        await addPasskey(await getUserId(), {
-            id: credential.id,
-            publicKey: Buffer.from(credential.publicKey).toString("base64url"),
-            counter: credential.counter,
-            transports: (credential.transports ?? []) as AuthenticatorTransport[],
-        });
-        res.json({ status: "ok" });
-    } catch (err) {
-        console.error("passkey enrollment failed", err);
-        res.status(400).json({ status: "verification_failed" });
-    }
-});
-
-app.get("/admin", requireAdmin, (req, res) => {
-    res.render("pages/admin.njk");
-})
-
-app.get("/messages", async (req, res) => {
-    res.json(await getApproved(messageTtlMs));
-});
-
-async function verifyTurnstile(token: unknown, ip: string | undefined): Promise<boolean> {
-    if (turnstile_disabled) return true;
-    if (!turnstile_secret || typeof token !== "string" || !token) return false;
-    const body = new URLSearchParams({ secret: turnstile_secret, response: token });
-    if (ip) body.set("remoteip", ip);
-    try {
-        const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-            method: "POST",
-            body,
-        });
-        const data = (await res.json()) as { success?: boolean };
-        return data.success === true;
-    } catch (err) {
-        console.error("turnstile verification failed", err);
-        return false;
-    }
-}
-
-app.post("/messages", async (req, res) => {
-    const { author, message } = req.body;
-    const token = req.body["cf-turnstile-response"];
-    if (!(await verifyTurnstile(token, req.ip))) {
-        res.status(403).json({ status: "turnstile_failed" });
-        return;
-    }
-    if (typeof author !== "string" || typeof message !== "string" || !author.trim() || !message.trim()) {
-        res.status(400).json({ status: "invalid_message" });
-        return;
-    }
-    await addMessage(author, message);
-    res.json({ status: "pending" });
-});
-
-app.get("/admin/api/messages", requireAdmin, async (req, res) => {
-    res.json({ pending: await getPending(), approved: await getApproved(messageTtlMs) });
-});
-
-app.post("/admin/api/messages/:id/approve", requireAdmin, async (req, res) => {
-    const found = await approveMessage(Number(req.params.id));
-    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
-});
-
-app.post("/admin/api/messages/:id/reject", requireAdmin, async (req, res) => {
-    const found = await rejectMessage(Number(req.params.id));
-    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
-});
-
-app.delete("/admin/api/messages/:id", requireAdmin, async (req, res) => {
-    const found = await removeMessage(Number(req.params.id));
-    res.status(found ? 200 : 404).json({ status: found ? "ok" : "not_found" });
-});
-
-app.get("/admin/api/config", requireAdmin, (req, res) => {
-    res.json({ ttlMinutes: messageTtlMs / 60000 });
-});
-
-app.post("/admin/api/config", requireAdmin, (req, res) => {
-    const { ttlMinutes } = req.body;
-    const minutes = Number(ttlMinutes);
-    if (!Number.isFinite(minutes) || minutes <= 0) {
-        res.status(400).json({ status: "invalid_ttl" });
-        return;
-    }
-    messageTtlMs = minutes * 60000;
-    res.json({ status: "ok", ttlMinutes: minutes });
-});
+// API: one file per route in src/api (see router.ts)
+await registerApiRoutes(app, join(import.meta.dir, "api"));
 
 app.listen(3000, () => {
     console.log("running on http://localhost:3000/");
