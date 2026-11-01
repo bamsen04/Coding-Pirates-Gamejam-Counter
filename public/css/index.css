@@ -126,14 +126,13 @@ html.dark .stars {
     text-shadow: 4px 4px 0 var(--panel);
 }
 
-/* ── the clock: pixel digits drawn with big squares, in a window ── */
+/* ── the clock: pixel-font digits in a window, with a blinking red colon ── */
 .clock-display {
-    --cell: clamp(8px, 1.1vw, 22px);
+    --size: clamp(24px, 3.2vw, 64px);
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    gap: calc(var(--cell) * 0.4);
-    padding: calc(var(--cell) * 1.6) calc(var(--cell) * 1.4) calc(var(--cell) * 1.1);
+    padding: calc(var(--size) * 0.6) calc(var(--size) * 0.5) calc(var(--size) * 0.45);
     background: var(--panel);
     color: var(--ink);
     box-shadow: 0 -4px 0 0 var(--bd), 0 4px 0 0 var(--bd), -4px 0 0 0 var(--bd), 4px 0 0 0 var(--bd), 0 12px 0 4px #0003;
@@ -143,47 +142,25 @@ html.dark .stars {
     flex-direction: column;
     align-items: center;
 }
+.grp b {
+    font: 400 var(--size) / 1 var(--font-pixel);
+}
 .grp i {
-    margin-top: calc(var(--cell) * 1.1);
+    margin-top: calc(var(--size) * 0.35);
     font: 400 clamp(9px, 0.8vw, 16px) / 1 var(--font-pixel);
     font-style: normal;
     text-transform: uppercase;
 }
-.bms {
-    display: flex;
-    gap: calc(var(--cell) * 0.8);
+.sep {
+    font: 400 var(--size) / 1 var(--font-pixel);
+    color: var(--accent);
 }
-.bm {
-    display: grid;
-    grid-template-columns: repeat(3, var(--cell));
-    grid-auto-rows: var(--cell);
-    gap: 2px;
-}
-.bm s {
-    display: block;
-    text-decoration: none;
-}
-.bm s.on {
-    background: var(--ink);
-}
-/* the colon: two squares */
-.bsep {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: calc(var(--cell) * 5 + 8px);
-    padding: var(--cell) calc(var(--cell) * 0.5);
-}
-.bsep s {
-    display: block;
-    width: var(--cell);
-    height: var(--cell);
-    background: var(--accent);
-    text-decoration: none;
+@media (prefers-reduced-motion: no-preference) {
+    .sep { animation: blink 1s steps(1) infinite; }
 }
 @media (max-width: 767px) {
     .clock-display {
-        --cell: clamp(5px, 1.9vw, 9px);
+        --size: clamp(14px, 5.2vw, 26px);
     }
 }
 

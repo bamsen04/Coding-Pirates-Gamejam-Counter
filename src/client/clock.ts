@@ -1,6 +1,6 @@
 import { formatClock } from "./clock-format";
+import { clockHtml } from "./clock-markup";
 import { getJson } from "./http";
-import { clockHtml } from "./pixel-digits";
 import type { Settings } from "./types";
 
 // The server renders these into the page; they're refreshed every minute from /settings.
