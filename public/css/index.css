@@ -1,7 +1,8 @@
+/* var() so dark mode (src/styles/app.css) can swap them; the fallbacks are the light theme. */
 html,
 body {
-    background-color: #fff;
-    color: #000;
+    background-color: var(--color-white, #fff);
+    color: var(--color-black, #000);
 }
 
 .bubble {
@@ -36,7 +37,8 @@ body {
 
 .seg {
     position: absolute;
-    background: rgba(0, 0, 0, 0.08);
+    /* unlit segment: a faint hint of the text color */
+    background: color-mix(in srgb, var(--color-black, #000) 8%, transparent);
     transition: background 0.08s linear, box-shadow 0.08s linear;
 }
 

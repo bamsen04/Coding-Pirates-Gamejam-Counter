@@ -8,3 +8,35 @@
 body {
     font-family: 'Share Tech Mono', monospace;
 }
+
+/*
+ * Dark mode. Tailwind's colors are CSS variables (bg-white is var(--color-white)), so dark mode
+ * is just a different set of values for the ones the front page uses. black and white swap, which
+ * flips the page's black-on-white look, buttons included. This block is not in a layer so it
+ * wins over Tailwind's defaults. public/js/dark.js toggles the class.
+ */
+html.dark {
+    color-scheme: dark;
+    --color-white: #0b1017;
+    --color-black: #e6edf3;
+    --color-slate-500: #94a3b8;
+    --color-slate-700: #cbd5e1;
+    --color-slate-800: #e2e8f0;
+    /* message bubbles: a dark tint for the background, a deeper shade for the border */
+    --color-emerald-50: #0e2a22;
+    --color-emerald-300: #1b6b53;
+    --color-sky-50: #0c2433;
+    --color-sky-300: #1f6f9c;
+    --color-amber-50: #2e2210;
+    --color-amber-300: #9a6a1f;
+    --color-fuchsia-50: #2e1530;
+    --color-fuchsia-300: #94309f;
+    --color-rose-50: #2e121a;
+    --color-rose-300: #a8334f;
+}
+
+/* dark.js switches themes inside a view transition, which crossfades the whole page. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 1.5s;
+}

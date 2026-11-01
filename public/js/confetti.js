@@ -1,4 +1,4 @@
-import { onClockTick } from "./clock.js";
+import { onAction } from "./events.js";
 
 const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#0ea5e9", "#a855f7", "#ec4899", "#facc15"];
 const GRAVITY = 0.28;
@@ -115,15 +115,7 @@ export function launchConfetti() {
     }
 }
 
-// Fire once when the clock goes from counting down to 00:00:00.
-// Loading the page after the timer already ended does not fire it.
-let fired = false;
-onClockTick((str, previous) => {
-    if (str === "00:00:00:00" && previous !== null && previous !== "00:00:00:00" && !fired) {
-        fired = true;
-        launchConfetti();
-    }
-});
+onAction("confetti", launchConfetti);
 
 // Handy for testing from the console: launchConfetti();
 window.launchConfetti = launchConfetti;

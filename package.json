@@ -16,6 +16,7 @@
   "scripts": {
     "server": "bun run src/index.ts",
     "enroll": "bun run scripts/enroll.ts",
+    "test": "bun test",
     "build:css": "tailwindcss -i src/styles/app.css -o public/app.css --minify",
     "dev:css": "tailwindcss -i src/styles/app.css -o public/app.css --watch"
   },

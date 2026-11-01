@@ -2,7 +2,7 @@
 {% from "components/button.njk" import button %}
 {% from "components/auth-card.njk" import authCard %}
 
-{% set title = "Admin Login | CP Gamejam" %}
+{% set title = "Admin login | CP Gamejam" %}
 {% set bodyClass = "min-h-screen bg-white text-slate-800 flex items-center justify-center px-4" %}
 
 {% block head %}
@@ -11,7 +11,7 @@
 
 {% block content %}
 {% call authCard("Admin login") %}
-    {{ button("Log in with passkey", id="login-btn", full=true) }}
+    {{ button("Log ind med adgangsnøgle", id="login-btn", full=true) }}
     <p id="login-error" class="text-sm text-red-500"></p>
 {% endcall %}
 {% endblock %}

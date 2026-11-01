@@ -6,6 +6,8 @@ import { config } from "./config";
 import { migrate } from "./migrate";
 import { registerApiRoutes } from "./router";
 import db from "./services/db";
+import { listEvents } from "./services/events";
+import { getMaxMs, getShowDays, getTargetDate } from "./services/settings";
 
 const app = express();
 app.use(express.json());
@@ -19,8 +21,12 @@ await migrate(db);
 if (config.turnstile.disabled) console.warn("Turnstile is DISABLED, message spam protection is off");
 
 // Pages
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
     res.render("pages/index.njk", {
+        targetDate: await getTargetDate(),
+        showDays: await getShowDays(),
+        maxMs: await getMaxMs(),
+        events: await listEvents(),
         turnstile: { enabled: !config.turnstile.disabled, siteKey: config.turnstile.siteKey },
     });
 });

@@ -1,7 +1,16 @@
-import { onClockTick } from "./clock.js";
+import { onAction } from "./events.js";
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const ctx = new AudioCtx();
+
+// Called by the start screen: its click is the interaction browsers require before audio may play.
+export async function resumeAudio() {
+    try {
+        await ctx.resume();
+    } catch (err) {
+        console.error("audio resume failed", err);
+    }
+}
 
 // Browsers keep audio suspended until the user interacts with the page.
 const unlock = () => {
@@ -144,17 +153,13 @@ function finale() {
     }
 }
 
-onClockTick((str, previous) => {
-    if (ctx.state !== "running") return;
-
-    if (str === "00:00:00:00") {
-        // No tick at zero. Finale only on a live transition.
-        if (previous !== null && previous !== "00:00:00:00") finale();
-        return;
-    }
-
-    const [days, hours, minutes, seconds] = str.split(":").map(Number);
-    const total = days * 86400 + hours * 3600 + minutes * 60 + seconds;
-    tick();
-    if (total <= 10) countdownBeep(total);
+// Nothing plays until the browser has let the page make sound (see unlock above).
+onAction("tick", () => {
+    if (ctx.state === "running") tick();
+});
+onAction("beep", (secondsLeft) => {
+    if (ctx.state === "running") countdownBeep(secondsLeft);
+});
+onAction("fanfare", () => {
+    if (ctx.state === "running") finale();
 });

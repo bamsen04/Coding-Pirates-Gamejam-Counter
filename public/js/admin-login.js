@@ -6,8 +6,8 @@ async function post(url, body) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body ?? {}),
     });
-    if (res.status === 429) throw new Error("Too many attempts. Try again later.");
-    if (!res.ok) throw new Error("Login failed.");
+    if (res.status === 429) throw new Error("For mange forsøg. Prøv igen senere.");
+    if (!res.ok) throw new Error("Login mislykkedes.");
     return res.json();
 }
 
@@ -19,6 +19,6 @@ document.getElementById("login-btn").addEventListener("click", async () => {
         await post("/admin/login/verify", response);
         window.location.href = "/admin";
     } catch (err) {
-        errorEl.textContent = err.message || "Login failed.";
+        errorEl.textContent = err.message || "Login mislykkedes.";
     }
 });

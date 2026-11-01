@@ -1,5 +1,24 @@
-const TARGET_DATE = new Date(2027, 11 - 1, 1, 13, 0, 0).getTime();
-const MAX_MS = 24 * 60 * 60 * 1000 * 10000000;
+import { formatClock } from "./clock-format.js";
+
+// Rendered into the page by the server, then kept fresh by polling /settings.
+// targetDate is epoch ms; showDays picks DD:HH:MM:SS over total-hours HH:MM:SS;
+// maxMs caps how much time the clock will ever show.
+let targetDate = Number(document.body.dataset.targetDate);
+let showDays = document.body.dataset.showDays === "true";
+let maxMs = Number(document.body.dataset.maxMs);
+
+async function refreshSettings() {
+    try {
+        const res = await fetch("/settings");
+        const settings = await res.json();
+        targetDate = settings.targetDate;
+        showDays = settings.showDays;
+        maxMs = settings.maxMs;
+    } catch (err) {
+        console.error("failed to fetch settings", err);
+    }
+}
+setInterval(refreshSettings, 60000);
 
 const clockEls = document.querySelectorAll(".clock-display");
 
@@ -16,10 +35,6 @@ const SEGMENTS = {
     "9": "abcdfg",
 };
 
-function pad2(n) {
-    return String(n).padStart(2, "0");
-}
-
 function renderDigits(str) {
     const html = [...str].map((ch) => {
         if (ch === ":") return `<span class="seg-colon"></span>`;
@@ -34,30 +49,29 @@ function renderDigits(str) {
     });
 }
 
-// Other modules (sound, confetti) subscribe here. The callback gets the new
-// "DD:HH:MM:SS" string and the previous one (null on the first tick).
+// Other modules (sound, confetti) subscribe here. The callback gets the seconds
+// remaining now and on the previous tick (null on the first tick).
 const clockListeners = [];
-let previousStr = null;
+let previousTotal = null;
 
 export function onClockTick(fn) {
     clockListeners.push(fn);
 }
 
+// Seconds remaining as of the last tick (null before the first one).
+export function currentTotal() {
+    return previousTotal;
+}
+
 function updateClock() {
-    let remaining = TARGET_DATE - Date.now();
+    let remaining = targetDate - Date.now();
     if (remaining < 0) remaining = 0;
-    if (remaining > MAX_MS) remaining = MAX_MS;
+    if (remaining > maxMs) remaining = maxMs;
 
     const totalSeconds = Math.floor(remaining / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    const str = `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
-    renderDigits(str);
-    clockListeners.forEach((fn) => fn(str, previousStr));
-    previousStr = str;
+    renderDigits(formatClock(totalSeconds, showDays));
+    clockListeners.forEach((fn) => fn(totalSeconds, previousTotal));
+    previousTotal = totalSeconds;
 }
 
 updateClock();

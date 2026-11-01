@@ -35,13 +35,13 @@ export function defineRoute(a: RouteOptions | Handler, b?: Handler): Route {
 
 const FILE_PATTERN = /^(.*)\.(get|post|put|patch|delete)\.ts$/;
 
-function toUrlPath(filePath: string): string {
+export function toUrlPath(filePath: string): string {
     const url = "/" + filePath.replace(/\[(\w+)\]/g, ":$1").replace(/(^|\/)index$/, "");
     return url === "/" ? url : url.replace(/\/$/, "");
 }
 
 // Static segments before :params, so /a/new is registered ahead of /a/:id.
-function compareUrls(a: string, b: string): number {
+export function compareUrls(a: string, b: string): number {
     const as = a.split("/");
     const bs = b.split("/");
     for (let i = 0; i < Math.min(as.length, bs.length); i++) {

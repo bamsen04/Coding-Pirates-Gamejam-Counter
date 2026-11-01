@@ -8,7 +8,7 @@ async function post(url, body) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(res.status === 429 ? "Too many attempts. Try again later." : "Request failed (invalid or expired link?).");
+    if (!res.ok) throw new Error(res.status === 429 ? "For mange forsøg. Prøv igen senere." : "Anmodningen mislykkedes (ugyldigt eller udløbet link?).");
     return res.json();
 }
 
@@ -20,9 +20,9 @@ btn.addEventListener("click", async () => {
         const response = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON });
         await post("/admin/enroll/verify", { token, response });
         statusEl.className = "text-sm text-green-600";
-        statusEl.textContent = "Passkey registered. You can now log in.";
+        statusEl.textContent = "Adgangsnøgle registreret. Du kan nu logge ind.";
         btn.disabled = true;
     } catch (err) {
-        statusEl.textContent = err.message || "Registration failed.";
+        statusEl.textContent = err.message || "Registrering mislykkedes.";
     }
 });

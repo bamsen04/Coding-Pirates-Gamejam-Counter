@@ -10,7 +10,7 @@
     {% block head %}{% endblock %}
 </head>
 
-<body class="{{ bodyClass }}">
+<body class="{{ bodyClass }}"{% block bodyAttrs %}{% endblock %}>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
 </body>

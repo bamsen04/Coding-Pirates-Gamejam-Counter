@@ -2,7 +2,7 @@
 {% from "components/button.njk" import button %}
 {% from "components/auth-card.njk" import authCard %}
 
-{% set title = "Register passkey | CP Gamejam" %}
+{% set title = "Registrer adgangsnøgle | CP Gamejam" %}
 {% set bodyClass = "min-h-screen bg-white text-slate-800 flex items-center justify-center px-4" %}
 
 {% block head %}
@@ -10,8 +10,8 @@
 {% endblock %}
 
 {% block content %}
-{% call authCard("Register passkey") %}
-    {{ button("Register passkey", id="register-btn", full=true) }}
+{% call authCard("Registrer adgangsnøgle") %}
+    {{ button("Registrer adgangsnøgle", id="register-btn", full=true) }}
     <p id="status" class="text-sm text-red-500"></p>
 {% endcall %}
 {% endblock %}

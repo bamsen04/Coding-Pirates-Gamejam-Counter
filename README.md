@@ -33,6 +33,14 @@ docker compose run --rm app bun run enroll
 
 Open the printed link (valid 15 minutes, single use) and register a passkey. Then log in at `/admin/login`.
 
+## Tests
+
+```
+bun test
+```
+
+Runs the tests in [tests/](tests). They don't need MySQL or Docker; the database is mocked.
+
 ## Database migrations
 
 SQL files in [src/migrations](src/migrations) run in filename order when the app starts. Applied files are recorded in the `schema_migrations` table, so each runs once.
