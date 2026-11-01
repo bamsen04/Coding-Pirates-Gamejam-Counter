@@ -21,7 +21,8 @@ Everything is read from `.env` (see [.env.example](.env.example)) in [src/config
 |---|---|
 | `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` | Required. Only applied when the database volume is first created. |
 | `MYSQL_USER`, `MYSQL_DATABASE` | Optional, default `gamejam`. |
-| `TURNSTILE_SECRET_KEY` | Required unless Turnstile is disabled. |
+| `TURNSTILE_SITE_KEY` | The widget's public key, shown in the page. Optional; defaults to the project's current key. |
+| `TURNSTILE_SECRET_KEY` | The widget's private key. Required unless Turnstile is disabled. |
 | `DISABLE_TURNSTILE` | `true` skips the captcha. Development only. |
 | `RP_ID`, `ORIGIN` | Passkeys are bound to these. Set to your real domain and `https://` origin in production. |
 
