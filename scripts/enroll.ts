@@ -1,4 +1,4 @@
-import { createEnrollToken, ENROLL_TOKEN_TTL_MS, ORIGIN } from "./passkeys";
+import { createEnrollToken, ENROLL_TOKEN_TTL_MS, ORIGIN } from "../src/passkeys";
 
 const token = createEnrollToken();
 console.log(`Open this link to register a passkey (valid for ${ENROLL_TOKEN_TTL_MS / 60000} minutes, single use):`);

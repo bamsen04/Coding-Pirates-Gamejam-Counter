@@ -99,12 +99,16 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
     res.redirect("/admin/login");
 }
 
+function getTemplatePath(template: string) {
+    return join(import.meta.dir, "../templates", template);
+}
+
 app.get("/", (req, res) => {
-    res.sendFile(join(import.meta.dir, "index.html"));
+    res.sendFile(getTemplatePath("index.html"));
 });
 
 app.get("/admin/login", (req, res) => {
-    res.sendFile(join(import.meta.dir, "admin-login.html"));
+    res.sendFile(getTemplatePath("admin-login.html"));
 });
 
 app.post("/admin/login/options", loginRateLimit, async (req, res) => {
@@ -176,7 +180,7 @@ app.post("/admin/login/verify", loginRateLimit, async (req, res) => {
 });
 
 app.get("/admin/enroll", (req, res) => {
-    res.sendFile(join(import.meta.dir, "admin-enroll.html"));
+    res.sendFile(getTemplatePath("admin-enroll.html"));
 });
 
 app.post("/admin/enroll/options", loginRateLimit, async (req, res) => {
@@ -237,7 +241,7 @@ app.post("/admin/enroll/verify", loginRateLimit, async (req, res) => {
 });
 
 app.get("/admin", requireAdmin, (req, res) => {
-    res.sendFile(join(import.meta.dir, "admin.html"));
+    res.sendFile(getTemplatePath("admin.html"));
 })
 
 app.get("/messages", (req, res) => {
