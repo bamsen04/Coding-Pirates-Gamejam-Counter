@@ -7,6 +7,7 @@ process.env.MYSQL_PASSWORD = "test";
 process.env.MYSQL_DATABASE = "test";
 process.env.DISABLE_TURNSTILE = "true";
 process.env.ORIGIN = "https://countdown.example.dk";
+process.env.ALLOWED_IPS = "198.51.100.7, 203.0.113.9";
 
 /**
  * Stand-in for services/db: records every query (SQL with ? for each value, then the values) and

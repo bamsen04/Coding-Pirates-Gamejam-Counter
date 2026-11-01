@@ -47,7 +47,7 @@ describe("logging in to a hold", () => {
         expect(res.cookies).toHaveLength(1);
         expect(res.cookies[0]!.name).toBe("hold_token");
         expect(res.cookies[0]!.value).toBe("ABCD2345");
-        expect(res.cookies[0]!.options).toMatchObject({ httpOnly: true, sameSite: "lax" });
+        expect(res.cookies[0]!.options).toMatchObject({ httpOnly: true, secure: true, sameSite: "lax" });
     });
 
     test("does not care about case or spaces around the code", async () => {

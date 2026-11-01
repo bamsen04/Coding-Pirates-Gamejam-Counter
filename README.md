@@ -26,6 +26,7 @@ Everything is read from `.env` (see [.env.example](.env.example)) in [src/config
 | `DISABLE_TURNSTILE` | `true` skips the captcha. Development only. |
 | `RP_ID`, `ORIGIN` | Passkeys are bound to these. Set to your real domain and `https://` origin in production (`ORIGIN="https://countdown.gamejamkbh.dk"`). `ORIGIN` is also the address printed and linked with a QR code on the hold PDFs. |
 | `TRUST_PROXY` | `true` when the app runs behind a reverse proxy, so visitors keep their own IP. Needed for the per-IP limit below. |
+| `ALLOWED_IPS` | Public IPs you trust (comma-separated), for example the venue's. They get 5 times the login rate limits (admin login and hold login), counted per browser instead of for the whole address. Does not change the one-message-per-10-minutes limit for *Ingen hold*. |
 
 ## Enrolling an admin passkey
 
@@ -47,6 +48,8 @@ Pressing + opens a first step, "Er du på et hold?": type the hold's code, or pr
 | frivillig | none |
 | Admin (logged in to the admin page) | none |
 | Nobody (*Ingen hold*) | 10 minutes per IP, plus the Turnstile captcha |
+
+Cookies get the `Secure` flag automatically when `ORIGIN` starts with `https://`, so they are never sent over plain http. Local development on `http://localhost` is left without it.
 
 Per hold, the admin page can set a different wait (for example 30 minutes, or 0), give the hold a **new code** (the old one stops working), or **ban** it so it can't send. A hold that is banned can still log in but can't send; someone can log out and send as *Ingen hold*, which is limited as above.
 

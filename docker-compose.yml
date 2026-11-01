@@ -14,6 +14,7 @@ services:
       RP_ID: ${RP_ID:-localhost}
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      ALLOWED_IPS: ${ALLOWED_IPS:-}
     depends_on:
       db:
         condition: service_healthy

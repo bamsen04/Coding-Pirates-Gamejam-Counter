@@ -1,4 +1,4 @@
-import { holdLoginRateLimit } from "@/auth";
+import { holdLoginRateLimit, setCookie } from "@/auth";
 import { defineRoute } from "@/router";
 import { findHoldByToken } from "@/services/holds";
 import { HOLD_COOKIE } from "@/services/sender";
@@ -13,6 +13,6 @@ export default defineRoute({ rateLimit: holdLoginRateLimit }, async (req, res) =
     }
 
     // The cookie holds the code itself. If the holds are generated again, it simply stops matching.
-    res.cookie(HOLD_COOKIE, hold.token, { httpOnly: true, sameSite: "lax", maxAge: WEEK_MS });
+    setCookie(res, HOLD_COOKIE, hold.token, { sameSite: "lax", maxAge: WEEK_MS });
     res.json({ status: "ok", label: hold.label });
 });

@@ -7,6 +7,17 @@ function required(name: string): string {
 const disableTurnstile = process.env.DISABLE_TURNSTILE === "true";
 const origin = process.env.ORIGIN ?? "http://localhost:3000";
 
+// "::ffff:203.0.113.7" (an IPv4 visitor on a dual-stack server) is the same address as "203.0.113.7".
+export function normalizeIp(ip: string): string {
+    return ip.trim().replace(/^::ffff:/i, "");
+}
+
+// Cookies get the Secure flag when the site is served over HTTPS. Browsers refuse to send them over plain
+// http, which is why local development on http://localhost is left without it.
+export function isHttps(url: string): boolean {
+    return url.startsWith("https://");
+}
+
 // "countdown.gamejamkbh.dk" from "https://countdown.gamejamkbh.dk", for printing.
 function hostOf(url: string): string {
     try {
@@ -39,4 +50,9 @@ export const config = {
     origin,
     // The site's address as people would type it. Printed on the hold PDFs.
     host: hostOf(origin),
+    // Cookies are only sent over HTTPS when this is on.
+    secureCookies: isHttps(origin),
+    // Public IPs (e.g. the venue's) that get roomier login rate limits, counted per browser.
+    // Comma-separated, in ALLOWED_IPS. Only meaningful when req.ip is the real address (see TRUST_PROXY).
+    allowedIps: new Set((process.env.ALLOWED_IPS ?? "").split(",").map(normalizeIp).filter(Boolean)),
 };

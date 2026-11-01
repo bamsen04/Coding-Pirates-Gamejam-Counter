@@ -1,5 +1,5 @@
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
-import { CHALLENGE_COOKIE, CHALLENGE_TTL_MS, loginChallenges } from "@/auth";
+import { CHALLENGE_COOKIE, CHALLENGE_TTL_MS, loginChallenges, setCookie } from "@/auth";
 import { config } from "@/config";
 import { defineRoute } from "@/router";
 import { listPasskeys } from "@/services/passkeys";
@@ -17,6 +17,6 @@ export default defineRoute({ rateLimit: true }, async (req, res) => {
     });
     const challengeId = crypto.randomUUID();
     loginChallenges.set(challengeId, { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL_MS });
-    res.cookie(CHALLENGE_COOKIE, challengeId, { httpOnly: true, sameSite: "strict", maxAge: CHALLENGE_TTL_MS });
+    setCookie(res, CHALLENGE_COOKIE, challengeId, { sameSite: "strict", maxAge: CHALLENGE_TTL_MS });
     res.json(options);
 });
