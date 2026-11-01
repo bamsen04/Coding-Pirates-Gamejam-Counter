@@ -1,7 +1,7 @@
 import { byId } from "../dom";
 import { getJson, postJson } from "../http";
 import type { EventAction, TimerEvent } from "../types";
-import { emptyNote, makeButton, RED_BUTTON } from "./ui";
+import { emptyNote, makeButton, RED_BUTTON, ROW } from "./ui";
 
 const list = byId("events-list");
 const form = byId<HTMLFormElement>("event-form");
@@ -69,7 +69,7 @@ function row(event: TimerEvent): HTMLElement {
     label.textContent = describe(event);
 
     const el = document.createElement("div");
-    el.className = "border-2 border-black p-3 flex items-center justify-between gap-4 text-sm";
+    el.className = `${ROW} flex items-center justify-between gap-4`;
     el.append(label, makeButton("Fjern", RED_BUTTON, () => remove(event.id)));
     return el;
 }
@@ -91,7 +91,7 @@ async function remove(id: number) {
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
     status.textContent = "";
-    status.className = "text-sm text-red-500";
+    status.className = "text-accent";
 
     const at = parseTimer(atInput.value);
     const until = parseTimer(untilInput.value);

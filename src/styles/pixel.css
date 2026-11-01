@@ -1,0 +1,179 @@
+/*
+ * Pixelhavet: the look of the whole site. An 8-bit sea level: flat saturated colours, stepped pixel
+ * borders, a pixel font for the big things (headings, labels, buttons, the clock) and Chakra Petch for text:
+ * pixel fonts draw a 5 almost like an S, so text that has to be read, numbers included, is not set in one.
+ *
+ * Everything is a variable, so dark mode is just another set of values: html.dark is the night sea,
+ * toggled by src/client/dark.ts. Flat blocks and strong contrast are on purpose: this is shown on
+ * projectors, which wash colour out and turn thin lines and texture to mush.
+ */
+:root {
+    --sky: #7fd8ff;
+    --sea: #1f7ed4;
+    --wave: #ffffff66;
+    --bd: #1d2b53; /* pixel borders */
+    --ink: #1d2b53; /* text */
+    --panel: #fff1e8; /* windows and boxes */
+    --field: #fffaf5; /* inputs and list rows */
+    --accent: #ff004d;
+    --onaccent: #ffffff;
+    --ok: #00e436;
+    --onok: #1d2b53;
+    --good: #00803a; /* success text on a panel */
+    --sun: #ffe94a;
+    --tab: #ffe94a;
+    --tabink: #1d2b53;
+}
+
+html.dark {
+    color-scheme: dark;
+    --sky: #0a1030;
+    --sea: #0f1d52;
+    --wave: #ffffff2a;
+    --bd: #fff1e8;
+    --ink: #fff1e8;
+    --panel: #1d2b53;
+    --field: #101a3d;
+    --accent: #ff77a8;
+    --onaccent: #1d1030;
+    --ok: #00e436;
+    --onok: #1d2b53;
+    --good: #5dff95;
+    --sun: #e8ecff;
+    --tab: #ff77a8;
+    --tabink: #1d1030;
+}
+
+/* The same variables as Tailwind colours and fonts: bg-panel, text-ink, border-bd, font-pixel ... */
+@theme inline {
+    --color-sky: var(--sky);
+    --color-sea: var(--sea);
+    --color-bd: var(--bd);
+    --color-ink: var(--ink);
+    --color-panel: var(--panel);
+    --color-field: var(--field);
+    --color-accent: var(--accent);
+    --color-onaccent: var(--onaccent);
+    --color-ok: var(--ok);
+    --color-onok: var(--onok);
+    --color-good: var(--good);
+    --color-tab: var(--tab);
+    --color-tabink: var(--tabink);
+    --font-pixel: "Press Start 2P", ui-monospace, monospace;
+    --font-body: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    body {
+        background: var(--sea);
+        color: var(--ink);
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 19px;
+        line-height: 1.15;
+    }
+}
+
+@layer components {
+    /* The stepped pixel border: four bars around the box, no corners. Add it to anything. */
+    .px {
+        box-shadow: 0 -4px 0 0 var(--bd), 0 4px 0 0 var(--bd), -4px 0 0 0 var(--bd), 4px 0 0 0 var(--bd);
+    }
+    .px-sm {
+        box-shadow: 0 -3px 0 0 var(--bd), 0 3px 0 0 var(--bd), -3px 0 0 0 var(--bd), 3px 0 0 0 var(--bd);
+    }
+
+    /* A window or box. */
+    .px-panel {
+        background: var(--panel);
+        color: var(--ink);
+    }
+
+    /* A row in a list: sunk into its panel. */
+    .px-row {
+        background: var(--field);
+        box-shadow: inset 0 0 0 4px var(--bd);
+    }
+
+    /* Inputs. */
+    .px-field {
+        background: var(--field);
+        color: var(--ink);
+        border: 4px solid var(--bd);
+        padding: 0.55rem 0.75rem;
+        font: inherit;
+    }
+    .px-field:focus {
+        outline: 4px solid var(--accent);
+        outline-offset: 2px;
+    }
+    .px-field:disabled {
+        opacity: 0.4;
+    }
+    .px-field::placeholder {
+        color: var(--ink);
+        opacity: 0.55;
+    }
+
+    /* Buttons. Use together with .px (or .px-sm). */
+    .px-btn {
+        display: inline-block;
+        padding: 0.9rem 1.1rem;
+        background: var(--panel);
+        color: var(--ink);
+        font-family: var(--font-pixel);
+        font-size: 0.7rem;
+        line-height: 1.4;
+        text-align: center;
+        text-transform: uppercase;
+        cursor: pointer;
+        user-select: none;
+    }
+    .px-btn:hover {
+        filter: brightness(1.08);
+    }
+    .px-btn:active {
+        transform: translateY(2px);
+    }
+    .px-btn:focus-visible {
+        outline: 4px solid var(--accent);
+        outline-offset: 4px;
+    }
+    .px-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        filter: none;
+    }
+    .px-btn-primary,
+    .px-btn-no {
+        background: var(--accent);
+        color: var(--onaccent);
+    }
+    .px-btn-ok {
+        background: var(--ok);
+        color: var(--onok);
+    }
+    .px-btn-sm {
+        padding: 0.6rem 0.65rem;
+        font-size: 0.6rem;
+    }
+
+    /* A small label stuck on a box. */
+    .px-badge {
+        display: inline-block;
+        padding: 0.3rem 0.45rem 0.25rem;
+        background: var(--accent);
+        color: var(--onaccent);
+        font-family: var(--font-pixel);
+        font-size: 0.55rem;
+        line-height: 1;
+        text-transform: uppercase;
+    }
+}
+
+/* dark.ts switches themes inside a view transition, which crossfades the whole page. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 1.5s;
+}

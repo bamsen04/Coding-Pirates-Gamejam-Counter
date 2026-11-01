@@ -35,6 +35,7 @@ While editing, `bun run dev:css` and `bun run dev:js` rebuild on every change. `
 | `src/services/` | Database access and the logic behind the routes: messages, holds, cooldowns, settings, events, PDFs. |
 | `src/client/` | The browser code in TypeScript, bundled by `bun run build` into `public/js/`. |
 | `views/` | Nunjucks templates: a layout, small components, and the pages. |
+| `src/styles/` | The look, "Pixelhavet": `pixel.css` has the colours (light, and the night sea for dark mode) and the pixel boxes and buttons; `app.css` is the Tailwind entry. The front page's sea, clock and message boxes are in `public/css/index.css`. |
 | `src/migrations/` | The database schema, as numbered SQL files. |
 | `tests/` | Tests with a mocked database. |
 

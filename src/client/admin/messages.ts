@@ -1,7 +1,7 @@
 import { byId } from "../dom";
 import { getJson } from "../http";
 import type { Message } from "../types";
-import { emptyNote, GREEN_BUTTON, makeButton, RED_BUTTON } from "./ui";
+import { emptyNote, GREEN_BUTTON, makeButton, RED_BUTTON, ROW } from "./ui";
 
 const pendingListEl = byId("pending-list");
 const approvedListEl = byId("approved-list");
@@ -52,11 +52,11 @@ function playBeep() {
 
 function messageRow(message: Message, actions: HTMLElement[]): HTMLElement {
     const author = document.createElement("div");
-    author.className = "text-xs font-semibold text-slate-500 mb-1 truncate";
+    author.className = "opacity-70 mb-1 truncate";
     author.textContent = `${message.author} (${message.label}) · ${new Date(message.sentAt).toLocaleTimeString()}`;
 
     const text = document.createElement("div");
-    text.className = "text-sm break-words";
+    text.className = "break-words";
     text.textContent = message.text;
 
     const info = document.createElement("div");
@@ -68,7 +68,7 @@ function messageRow(message: Message, actions: HTMLElement[]): HTMLElement {
     buttons.append(...actions);
 
     const row = document.createElement("div");
-    row.className = "border-2 border-black p-3 flex items-start justify-between gap-4";
+    row.className = `${ROW} flex items-start justify-between gap-4`;
     row.append(info, buttons);
     return row;
 }

@@ -1,5 +1,6 @@
 import { formatClock } from "./clock-format";
 import { getJson } from "./http";
+import { clockHtml } from "./pixel-digits";
 import type { Settings } from "./types";
 
 // The server renders these into the page; they're refreshed every minute from /settings.
@@ -21,37 +22,10 @@ async function refreshSettings() {
 }
 setInterval(refreshSettings, 60000);
 
-// Seven-segment display: which segments are lit for each digit.
-const SEGMENTS: Record<string, string> = {
-    "0": "abcdef",
-    "1": "bc",
-    "2": "abged",
-    "3": "abgcd",
-    "4": "fgbc",
-    "5": "afgcd",
-    "6": "afgecd",
-    "7": "abc",
-    "8": "abcdefg",
-    "9": "abcdfg",
-};
-const SEGMENT_NAMES = ["a", "b", "c", "d", "e", "f", "g"];
-const HORIZONTAL_SEGMENTS = ["a", "d", "g"];
-
-function charHtml(char: string): string {
-    if (char === ":") return `<span class="seg-colon"></span>`;
-
-    const lit = SEGMENTS[char] ?? "";
-    const segments = SEGMENT_NAMES.map((name) => {
-        const direction = HORIZONTAL_SEGMENTS.includes(name) ? "h" : "v";
-        return `<span class="seg seg-${name} seg-${direction} ${lit.includes(name) ? "on" : ""}"></span>`;
-    });
-    return `<span class="seg-digit">${segments.join("")}</span>`;
-}
-
 const clockEls = document.querySelectorAll<HTMLElement>(".clock-display");
 
 function renderDigits(text: string) {
-    const html = [...text].map(charHtml).join("");
+    const html = clockHtml(text);
     clockEls.forEach((el) => {
         el.innerHTML = html;
     });

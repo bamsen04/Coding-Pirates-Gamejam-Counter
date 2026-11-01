@@ -1,13 +1,13 @@
-{# Bordered admin section with a heading. Pass `countId` to get a counter badge next to the heading. #}
+{# A window on the admin page, with a heading. Pass `countId` to get a counter next to the heading. #}
 {% macro panel(title, countId="") %}
-<section class="border-4 border-black p-6 space-y-4">
+<section class="px px-panel p-5 space-y-4">
     {% if countId %}
-    <div class="flex items-center justify-between">
-        <h2 class="text-lg font-bold uppercase tracking-widest">{{ title }}</h2>
-        <span id="{{ countId }}" class="text-sm text-slate-500"></span>
+    <div class="flex items-center justify-between gap-3">
+        <h2 class="font-pixel text-xs uppercase leading-relaxed">{{ title }}</h2>
+        <span id="{{ countId }}" class="font-pixel text-xs"></span>
     </div>
     {% else %}
-    <h2 class="text-lg font-bold uppercase tracking-widest">{{ title }}</h2>
+    <h2 class="font-pixel text-xs uppercase leading-relaxed">{{ title }}</h2>
     {% endif %}
     {{ caller() }}
 </section>

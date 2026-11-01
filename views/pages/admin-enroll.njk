@@ -3,7 +3,7 @@
 {% from "components/auth-card.njk" import authCard %}
 
 {% set title = "Registrer adgangsnøgle | CP Gamejam" %}
-{% set bodyClass = "min-h-screen bg-white text-slate-800 flex items-center justify-center px-4" %}
+{% set bodyClass = "min-h-screen flex items-center justify-center px-4" %}
 
 {% block head %}
 <script src="https://unpkg.com/@simplewebauthn/browser@13.1.0/dist/bundle/index.umd.min.js"></script>
@@ -12,7 +12,7 @@
 {% block content %}
 {% call authCard("Registrer adgangsnøgle") %}
     {{ button("Registrer adgangsnøgle", id="register-btn", full=true) }}
-    <p id="status" class="text-sm text-red-500"></p>
+    <p id="status" class="text-accent"></p>
 {% endcall %}
 {% endblock %}
 

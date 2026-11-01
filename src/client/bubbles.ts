@@ -2,38 +2,32 @@ import { byId } from "./dom";
 import { getJson } from "./http";
 import type { Message } from "./types";
 
-// The approved messages, shown as bubbles: split over both sides of the clock on wide screens,
-// in one column on phones.
+// The approved messages, shown as dialogue boxes: split over both sides of the clock on wide screens,
+// in one column on phones. See .msg in public/css/index.css.
 const PER_SIDE = 4;
-const COLORS = [
-    "border-emerald-300 bg-emerald-50",
-    "border-sky-300 bg-sky-50",
-    "border-amber-300 bg-amber-50",
-    "border-fuchsia-300 bg-fuchsia-50",
-    "border-rose-300 bg-rose-50",
-];
 
 const leftEl = byId("bubbles-left");
 const rightEl = byId("bubbles-right");
 const mobileEl = byId("bubbles-mobile");
 
-function randomColor(): string {
-    return COLORS[Math.floor(Math.random() * COLORS.length)]!;
-}
+// The name and the hold sit on tabs on the box; the text goes inside.
+function box(message: Message, index: number): HTMLElement {
+    const who = document.createElement("span");
+    who.className = "who";
+    who.textContent = message.author;
 
-function bubble(message: Message, classes: string): HTMLElement {
-    const el = document.createElement("div");
-    el.className = `${classes} border-2 ${randomColor()} px-4 py-3 text-slate-800`;
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = message.label;
 
-    const author = document.createElement("div");
-    author.className = "text-xs font-semibold text-slate-500 mb-1 truncate";
-    author.textContent = `${message.author} (${message.label})`;
-
-    const text = document.createElement("div");
-    text.className = "text-sm break-words";
+    const text = document.createElement("p");
     text.textContent = message.text;
 
-    el.append(author, text);
+    const el = document.createElement("article");
+    el.className = "msg";
+    // Each box bobs on its own beat (negative: already under way when it appears).
+    el.style.animationDelay = `${-(index % 5) * 0.9}s`;
+    el.append(who, tag, text);
     return el;
 }
 
@@ -47,11 +41,8 @@ function layout(messages: Message[]) {
     mobileEl.replaceChildren();
 
     newest(messages).forEach((message, i) => {
-        const el = bubble(message, "bubble w-full max-w-[340px] backdrop-blur");
-        el.style.animationDelay = `${(i % 5) * 0.7}s`;
-        (i % 2 === 0 ? leftEl : rightEl).appendChild(el);
-
-        mobileEl.appendChild(bubble(message, "w-full"));
+        (i % 2 === 0 ? leftEl : rightEl).appendChild(box(message, i));
+        mobileEl.appendChild(box(message, i));
     });
 }
 

@@ -1,7 +1,7 @@
 import { byId } from "../dom";
 import { getJson, postJson } from "../http";
 import type { AdminHold } from "../types";
-import { emptyNote, GREEN_BUTTON, makeButton, makeLink, PLAIN_BUTTON, RED_BUTTON } from "./ui";
+import { emptyNote, GREEN_BUTTON, makeButton, makeLink, PLAIN_BUTTON, RED_BUTTON, ROW } from "./ui";
 
 const list = byId("holds-list");
 const form = byId<HTMLFormElement>("holds-form");
@@ -25,10 +25,10 @@ function cooldownField(hold: AdminHold): HTMLElement {
     input.step = "any";
     input.value = String(hold.cooldownMinutes);
     input.setAttribute("aria-label", `Ventetid for ${hold.label}, i minutter`);
-    input.className = "border-2 border-black px-2 py-1 w-20 text-sm";
+    input.className = "px-field w-24 py-1 px-2";
 
     const label = document.createElement("label");
-    label.className = "flex items-center gap-1 text-xs";
+    label.className = "flex items-center gap-2";
     label.append("Ventetid", input, "min");
 
     const wrapper = document.createElement("div");
@@ -41,7 +41,7 @@ function cooldownField(hold: AdminHold): HTMLElement {
         wrapper.append(makeButton("Standard", PLAIN_BUTTON, () => act(`/admin/api/holds/${hold.id}/cooldown`, { minutes: null })));
     } else {
         const note = document.createElement("span");
-        note.className = "text-xs text-slate-400";
+        note.className = "opacity-60";
         note.textContent = "(standard)";
         wrapper.append(note);
     }
@@ -54,16 +54,16 @@ function row(hold: AdminHold): HTMLElement {
     name.textContent = hold.label;
 
     const token = document.createElement("span");
-    token.className = "font-mono text-lg tracking-widest";
+    token.className = "font-pixel text-sm tracking-widest";
     token.textContent = hold.token;
 
     const el = document.createElement("div");
-    el.className = "border-2 border-black p-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm";
+    el.className = `${ROW} flex flex-wrap items-center gap-x-4 gap-y-3`;
     el.append(name, token);
 
     if (hold.banned) {
         const badge = document.createElement("span");
-        badge.className = "text-xs font-bold uppercase bg-red-500 text-white px-2 py-1";
+        badge.className = "px-badge";
         badge.textContent = "Spærret";
         el.append(badge);
     }
@@ -106,7 +106,7 @@ form.addEventListener("submit", async (e) => {
     if (holds.length > 0 && !confirm("Det erstatter alle koder, ventetider og spærringer. Fortsæt?")) return;
 
     const res = await postJson("/admin/api/holds", { count: Number(countInput.value) });
-    status.className = res.ok ? "text-sm text-emerald-600" : "text-sm text-red-500";
+    status.className = res.ok ? "text-good" : "text-accent";
     status.textContent = res.ok ? "Lavet." : "Det lykkedes ikke.";
     await loadHolds();
 });

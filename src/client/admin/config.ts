@@ -53,10 +53,10 @@ form.addEventListener("submit", async (e) => {
         const res = await postJson("/admin/api/config", config);
         if (!res.ok) throw new Error("request failed");
         status.textContent = "Gemt.";
-        status.className = "text-sm text-emerald-600";
+        status.className = "text-good";
     } catch {
         status.textContent = "Kunne ikke gemme.";
-        status.className = "text-sm text-red-500";
+        status.className = "text-accent";
     }
 });
 

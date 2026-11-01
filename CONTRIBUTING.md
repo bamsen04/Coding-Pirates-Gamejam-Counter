@@ -31,6 +31,7 @@ All of them should pass. The tests don't need a database or Docker.
 - **Small and plain is better.** If two ways work, pick the simpler one.
 - **Add a test** for behaviour you add or change, especially for limits, cooldowns, bans and anything about who may do what. The tests in [tests/](tests) show the pattern; the database is mocked.
 - **Browser code** is TypeScript in `src/client/`. Don't edit `public/js/` or `public/app.css`: they are built by `bun run build` and are not committed.
+- **Style with the site's own colours and classes**, not raw Tailwind colours: `bg-panel`, `text-ink`, `bg-accent`, `border-bd`, `font-pixel`, and `.px` for the stepped pixel border, `.px-btn` for buttons and `.px-field` for inputs (all in `src/styles/pixel.css`). They are variables, so dark mode and the look stay in one place. Keep text big and contrast strong: it is shown on projectors.
 - **Text on the site is Danish**, code and comments are English.
 
 ## Changing the database

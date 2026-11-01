@@ -3,7 +3,7 @@
 {% from "components/panel.njk" import panel %}
 
 {% set title = "Admin | CP Gamejam" %}
-{% set bodyClass = "min-h-screen bg-white text-slate-800" %}
+{% set bodyClass = "min-h-screen" %}
 
 {% block content %}
 {% set tabs = [
@@ -14,16 +14,16 @@
 ] %}
 
 {# The tabs stay at the top while you scroll. Messages come first: that's what you're here for. #}
-<header class="sticky top-0 z-10 bg-white border-b-4 border-black">
+<header class="sticky top-0 z-10 bg-panel border-b-4 border-bd">
     <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-xl font-bold uppercase tracking-widest">Admin</h1>
-        <nav class="flex flex-wrap gap-2" role="tablist" aria-label="Admin">
+        <h1 class="font-pixel text-sm uppercase">Admin</h1>
+        <nav class="flex flex-wrap gap-3" role="tablist" aria-label="Admin">
             {% for tab in tabs %}
             <button type="button" role="tab" data-tab="{{ tab.id }}" aria-selected="{{ 'true' if loop.first else 'false' }}"
-                class="text-sm font-bold uppercase tracking-widest py-2 px-4 border-2 border-black transition-colors {{ 'bg-black text-white' if loop.first else 'bg-white hover:bg-slate-100' }}">
+                class="font-pixel text-[0.65rem] uppercase leading-none py-3 px-3 {{ 'bg-accent text-onaccent' if loop.first else 'bg-field text-ink hover:brightness-95' }}">
                 {{ tab.label }}
                 {% if tab.id == "messages" %}
-                <span id="pending-badge" class="hidden ml-1 bg-red-500 text-white px-2 py-0.5 text-xs"></span>
+                <span id="pending-badge" class="hidden ml-1 px-1.5 py-0.5 bg-tab text-tabink"></span>
                 {% endif %}
             </button>
             {% endfor %}
@@ -34,29 +34,28 @@
 <main class="max-w-4xl mx-auto px-4 py-8">
     <section data-panel="messages" role="tabpanel" class="space-y-8">
         {% call panel("Afventende beskeder", countId="pending-count") %}
-        <div id="pending-list" class="space-y-3"></div>
+        <div id="pending-list" class="space-y-4"></div>
         {% endcall %}
 
         {% call panel("Godkendte beskeder", countId="approved-count") %}
-        <div id="approved-list" class="space-y-3"></div>
+        <div id="approved-list" class="space-y-4"></div>
         {% endcall %}
     </section>
 
     <section data-panel="holds" role="tabpanel" class="space-y-8" hidden>
         {% call panel("Hold") %}
-        <div id="holds-list" class="space-y-2"></div>
-        <form id="holds-form" class="flex flex-wrap items-end gap-3">
-            <label class="flex flex-col gap-1 text-sm">
+        <div id="holds-list" class="space-y-4"></div>
+        <form id="holds-form" class="flex flex-wrap items-end gap-4">
+            <label class="flex flex-col gap-1">
                 Antal hold
                 <input id="holds-count" type="number" min="1" max="99" step="1" value="14" required
-                    class="border-2 border-black px-3 py-2 w-28" />
+                    class="px-field w-28" />
             </label>
             {{ button("Lav nye koder til alle", type="submit") }}
-            <a href="/admin/api/holds/pdf"
-                class="bg-black text-white font-bold uppercase tracking-widest py-2 px-4 hover:bg-slate-800 transition-colors">Hent alle som PDF</a>
-            <span id="holds-status" class="text-sm"></span>
+            <a href="/admin/api/holds/pdf" class="px px-btn px-btn-ok">Hent alle som PDF</a>
+            <span id="holds-status"></span>
         </form>
-        <p class="text-xs text-slate-500">
+        <p class="text-base opacity-75">
             "Lav nye koder til alle" laver hold 1 til det antal du vælger, plus frivillig, og erstatter alle
             nuværende koder, ventetider og spærringer. Til ét hold kan du give en ny kode eller hente dets PDF på rækken.
             Ventetiden er tiden mellem et holds beskeder; frivillig har ingen, medmindre du sætter en.
@@ -66,11 +65,11 @@
 
     <section data-panel="events" role="tabpanel" class="space-y-8" hidden>
         {% call panel("Begivenheder på uret") %}
-        <div id="events-list" class="space-y-2"></div>
-        <form id="event-form" class="flex flex-wrap items-end gap-3">
-            <label class="flex flex-col gap-1 text-sm">
+        <div id="events-list" class="space-y-4"></div>
+        <form id="event-form" class="flex flex-wrap items-end gap-4">
+            <label class="flex flex-col gap-1">
                 Handling
-                <select id="event-action" class="border-2 border-black px-3 py-2 bg-white">
+                <select id="event-action" class="px-field">
                     <option value="confetti">Konfetti</option>
                     <option value="fanfare">Fanfare (lyd)</option>
                     <option value="tick">Tik (lyd, nedtællingen)</option>
@@ -78,43 +77,39 @@
                     <option value="dark">Mørk tilstand</option>
                 </select>
             </label>
-            <label class="flex flex-col gap-1 text-sm">
+            <label class="flex flex-col gap-1">
                 Ved (TT:MM:SS)
-                <input id="event-at" type="text" placeholder="00:10:00" class="border-2 border-black px-3 py-2 w-36" />
+                <input id="event-at" type="text" placeholder="00:10:00" class="px-field w-40" />
             </label>
-            <label class="flex flex-col gap-1 text-sm">
+            <label class="flex flex-col gap-1">
                 Til (TT:MM:SS)
-                <input id="event-until" type="text" placeholder="00:00:01"
-                    class="border-2 border-black px-3 py-2 w-36 disabled:opacity-40" />
+                <input id="event-until" type="text" placeholder="00:00:01" class="px-field w-40" />
             </label>
             {{ button("Tilføj", type="submit") }}
-            <span id="event-status" class="text-sm"></span>
+            <span id="event-status"></span>
         </form>
-        <p id="event-hint" class="text-sm"></p>
-        <p class="text-xs text-slate-500">Tiderne er det, uret viser.</p>
+        <p id="event-hint"></p>
+        <p class="text-base opacity-75">Tiderne er det, uret viser.</p>
         {% endcall %}
     </section>
 
     <section data-panel="settings" role="tabpanel" class="space-y-8" hidden>
         {% call panel("Indstillinger") %}
-        <form id="config-form" class="flex flex-wrap items-end gap-3">
-            <label class="flex flex-col gap-1 text-sm">
+        <form id="config-form" class="flex flex-wrap items-end gap-4">
+            <label class="flex flex-col gap-1">
                 Beskeder udløber efter (minutter)
-                <input id="ttl-input" type="number" min="1" step="1" required
-                    class="border-2 border-black px-3 py-2 w-40" />
+                <input id="ttl-input" type="number" min="1" step="1" required class="px-field w-44" />
             </label>
-            <label class="flex flex-col gap-1 text-sm">
+            <label class="flex flex-col gap-1">
                 Nedtælling til (dato og tid)
-                <input id="target-input" type="datetime-local" required
-                    class="border-2 border-black px-3 py-2" />
+                <input id="target-input" type="datetime-local" required class="px-field" />
             </label>
-            <div class="flex flex-col gap-1 text-sm">
+            <div class="flex flex-col gap-1">
                 Maksimum for uret
                 <div class="flex">
                     <input id="max-value-input" type="number" min="1" step="1" required aria-label="Maksimum for uret"
-                        class="border-2 border-black px-3 py-2 w-28" />
-                    <select id="max-unit-input" aria-label="Enhed for maksimum"
-                        class="border-2 border-l-0 border-black px-3 py-2 bg-white">
+                        class="px-field w-28" />
+                    <select id="max-unit-input" aria-label="Enhed for maksimum" class="px-field border-l-0">
                         <option value="days">dage</option>
                         <option value="hours">timer</option>
                         <option value="minutes">minutter</option>
@@ -122,12 +117,12 @@
                     </select>
                 </div>
             </div>
-            <label class="flex items-center gap-2 text-sm py-2">
-                <input id="show-days-input" type="checkbox" class="w-5 h-5 accent-black" />
+            <label class="flex items-center gap-2 py-2">
+                <input id="show-days-input" type="checkbox" class="w-6 h-6 accent-accent" />
                 Vis dage på uret
             </label>
             {{ button("Gem", type="submit") }}
-            <span id="config-status" class="text-sm"></span>
+            <span id="config-status"></span>
         </form>
         {% endcall %}
     </section>

@@ -1,4 +1,5 @@
-const BUTTON_BASE = "text-xs font-bold uppercase tracking-widest py-1 px-2 border-2 border-black transition-colors";
+// Small buttons for the lists on the admin page. They use the site's pixel button classes (see pixel.css).
+const BUTTON_BASE = "px px-sm px-btn px-btn-sm";
 
 export function makeButton(label: string, colors: string, onClick: () => void): HTMLButtonElement {
     const button = document.createElement("button");
@@ -18,14 +19,17 @@ export function makeLink(label: string, href: string, colors: string): HTMLAncho
     return link;
 }
 
-export const GREEN_BUTTON = "bg-emerald-500 text-white hover:bg-emerald-600";
-export const RED_BUTTON = "bg-red-500 text-white hover:bg-red-600";
-export const PLAIN_BUTTON = "bg-white hover:bg-slate-100";
+export const GREEN_BUTTON = "px-btn-ok";
+export const RED_BUTTON = "px-btn-no";
+export const PLAIN_BUTTON = "";
+
+// A row in a list: sunk into its panel.
+export const ROW = "px-row p-3";
 
 // The "nothing here" line shown in an empty list.
 export function emptyNote(text: string): HTMLElement {
     const note = document.createElement("p");
-    note.className = "text-sm text-slate-400";
+    note.className = "opacity-60";
     note.textContent = text;
     return note;
 }

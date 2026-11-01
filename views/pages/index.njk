@@ -2,7 +2,8 @@
 {% from "components/button.njk" import button %}
 
 {% set title = "Coding Pirates Gamejam" %}
-{% set bodyClass = "min-h-screen bg-white relative overflow-x-hidden md:overflow-hidden" %}
+{% set bodyClass = "scene-bg min-h-screen relative overflow-x-hidden md:overflow-hidden" %}
+
 {% block bodyAttrs %} data-target-date="{{ targetDate }}" data-show-days="{{ 'true' if showDays else 'false' }}" data-max-ms="{{ maxMs }}" data-events="{{ events | dump }}"{% endblock %}
 
 {% block head %}
@@ -10,92 +11,83 @@
 {% endblock %}
 
 {% block content %}
-<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_color-mix(in_srgb,var(--color-black)_4%,transparent)_0%,_var(--color-white)_70%)]">
+{# The sea behind everything: sun (a moon at night), waves, a ship. See public/css/index.css #}
+<div class="scenery" aria-hidden="true">
+    <div class="waves"><i></i><i></i><i></i><i></i></div>
+    <div class="sun"></div>
+    <div class="stars"></div>
+    <div class="ship hidden md:block"><i class="hull"></i><i class="mast"></i><i class="sail"></i><i class="skull"></i><i class="flag"></i></div>
 </div>
 
-<div class="md:hidden relative flex flex-col items-center gap-6 px-4 pt-10 pb-32 min-h-screen">
-    <h1 class="text-slate-700 text-3xl font-bold tracking-[0.15em] uppercase text-center">
-        Coding Pirates Gamejam
-    </h1>
-    <div id="clock-mobile"
-        class="clock-display text-4xl leading-none bg-white border-4 border-red-400 px-4 py-3 flex items-center justify-center">
-    </div>
-    <div id="bubbles-mobile" class="w-full flex flex-col gap-3"></div>
+<div class="md:hidden relative z-10 flex flex-col items-center gap-8 px-4 pt-10 pb-32 min-h-screen">
+    <h1 class="title">Coding Pirates Gamejam</h1>
+    <div id="clock-mobile" class="clock-display"></div>
+    <div id="bubbles-mobile" class="w-full flex flex-col gap-10 pt-4"></div>
 </div>
 
-<div
-    class="hidden md:grid relative h-screen grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-8 px-8 pt-28 pb-28">
-    <h1
-        class="absolute top-6 left-1/2 -translate-x-1/2 w-full text-slate-700 text-3xl md:text-5xl font-bold tracking-[0.2em] uppercase text-center px-4">
-        Coding Pirates Gamejam
-    </h1>
+<div class="hidden md:grid relative z-10 h-screen grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-8 px-8 pt-28 pb-28">
+    <h1 class="title absolute top-6 left-1/2 -translate-x-1/2 w-full px-4">Coding Pirates Gamejam</h1>
 
-    <div id="bubbles-left" class="h-full min-w-0 flex flex-col justify-evenly items-start gap-4"></div>
+    <div id="bubbles-left" class="h-full min-w-0 flex flex-col justify-evenly items-start gap-6"></div>
 
-    <div id="clock"
-        class="rounded-xl clock-display clock-desktop leading-none bg-white border-4 border-red-400 px-10 py-6 flex items-center justify-center">
-    </div>
+    <div id="clock" class="clock-display"></div>
 
-    <div id="bubbles-right" class="h-full min-w-0 flex flex-col justify-evenly items-end gap-4"></div>
+    <div id="bubbles-right" class="h-full min-w-0 flex flex-col justify-evenly items-end gap-6"></div>
 </div>
 
 <button id="fab" type="button"
-    class="rounded-xl fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-16 h-16 bg-black text-white text-3xl font-bold border-2 border-black flex items-center justify-center hover:bg-slate-800 transition-colors">+</button>
+    class="px fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[72px] h-[72px] bg-accent text-onaccent font-pixel text-3xl flex items-center justify-center hover:brightness-110 active:translate-y-0.5">+</button>
 
 {# Blocks the page until clicked; the click lets the browser play sound. See src/client/start.ts #}
-<div id="start-blocker" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center gap-6 px-4">
-    <h2 class="text-slate-700 text-2xl md:text-4xl font-bold tracking-[0.15em] uppercase text-center">
-        Coding Pirates Gamejam
-    </h2>
-    <button id="start-button" type="button"
-        class="bg-black text-white font-bold uppercase tracking-widest py-3 px-8 text-lg hover:bg-slate-800 transition-colors">Tryk
-        for at starte</button>
-    <p class="text-sm text-slate-500 text-center">Klik for at aktivere lyd</p>
+<div id="start-blocker" class="scene-bg fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div class="px px-panel w-full max-w-md p-8 flex flex-col items-center gap-6 text-center">
+        <h2 class="font-pixel text-base uppercase leading-relaxed">Coding Pirates Gamejam</h2>
+        <button id="start-button" type="button" class="px px-btn px-btn-primary">Tryk for at starte</button>
+        <p class="opacity-75">Klik for at aktivere lyd</p>
+    </div>
 </div>
 
-<div id="message-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-    <div class="bg-white border-4 border-black w-full max-w-sm p-6 relative">
-        <button id="message-close" type="button"
-            class="absolute top-2 right-2 text-2xl leading-none px-2 hover:text-red-500">&times;</button>
+<div id="message-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+    <div class="px px-panel w-full max-w-sm p-6 relative">
+        <button id="message-close" type="button" aria-label="Luk"
+            class="absolute top-2 right-3 font-pixel text-lg leading-none px-1 hover:text-accent">&times;</button>
 
         {# Step 1: type your hold's code, or say you're not on a hold. Nothing else is shown until you do. #}
-        <div id="gate" class="hidden space-y-4">
-            <h2 class="text-lg font-bold uppercase tracking-widest">Er du på et hold?</h2>
+        <div id="gate" class="hidden space-y-5">
+            <h2 class="font-pixel text-sm uppercase leading-relaxed pr-6">Er du på et hold?</h2>
 
-            <form id="hold-form" class="space-y-3">
+            <form id="hold-form" class="space-y-4">
                 <input id="hold-token" type="text" maxlength="12" required placeholder="Skriv din kode"
                     autocomplete="off" autocapitalize="characters" spellcheck="false"
-                    class="w-full border-2 border-black px-3 py-3 text-lg text-center uppercase tracking-widest" />
-                <p id="hold-error" class="text-sm text-red-500"></p>
+                    class="px-field w-full text-center text-xl uppercase tracking-widest" />
+                <p id="hold-error" class="text-accent"></p>
                 {{ button("Fortsæt", type="submit", full=true) }}
             </form>
 
-            <p class="text-center text-sm text-slate-500">eller</p>
+            <p class="text-center opacity-70">eller</p>
 
-            <button id="no-hold" type="button"
-                class="w-full border-2 border-black font-bold uppercase tracking-widest py-3 hover:bg-slate-100 transition-colors">Jeg er ikke på et hold</button>
+            <button id="no-hold" type="button" class="px px-btn w-full">Jeg er ikke på et hold</button>
         </div>
 
         {# Step 2: the message. #}
         <div id="compose" class="hidden">
-            <h2 class="text-lg font-bold uppercase tracking-widest mb-4">Send en besked</h2>
+            <h2 class="font-pixel text-sm uppercase leading-relaxed pr-6 mb-4">Send en besked</h2>
 
-            <div class="flex items-center justify-between gap-3 mb-4 text-sm">
+            <div class="flex items-center justify-between gap-3 mb-4">
                 <span>Du sender som <strong id="sender-label"></strong></span>
-                <button id="sender-switch" type="button" class="underline hover:text-red-500"></button>
+                <button id="sender-switch" type="button" class="underline hover:text-accent"></button>
             </div>
 
-            <form id="message-form" class="space-y-3">
-                <input id="message-author" type="text" maxlength="30" required placeholder="Dit navn"
-                    class="w-full border-2 border-black px-3 py-2 text-sm" />
+            <form id="message-form" class="space-y-4">
+                <input id="message-author" type="text" maxlength="30" required placeholder="Dit navn" class="px-field w-full" />
                 <textarea id="message-text" maxlength="200" required rows="3" placeholder="Din besked"
-                    class="w-full border-2 border-black px-3 py-2 text-sm resize-none"></textarea>
-                <p id="message-error" class="text-sm text-red-500"></p>
+                    class="px-field w-full resize-none"></textarea>
+                <p id="message-error" class="text-accent"></p>
                 {# Only people without a hold have to pass the captcha. #}
                 {% if turnstile.enabled %}
                 <div id="turnstile-box" class="cf-turnstile" data-sitekey="{{ turnstile.siteKey }}"></div>
                 {% endif %}
-                <p id="message-note" class="text-sm text-slate-500"></p>
+                <p id="message-note" class="opacity-75"></p>
                 {{ button("Send", id="message-send", type="submit", full=true) }}
             </form>
         </div>

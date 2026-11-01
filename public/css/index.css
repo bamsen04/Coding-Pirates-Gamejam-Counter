@@ -1,133 +1,244 @@
-/* var() so dark mode (src/styles/app.css) can swap them; the fallbacks are the light theme. */
-html,
-body {
-    background-color: var(--color-white, #fff);
-    color: var(--color-black, #000);
+/*
+ * The front page: the sea, and what lives in it (the clock, the message boxes, a ship).
+ * The colours are variables from src/styles/pixel.css, so html.dark turns this into the night sea.
+ * Sizes grow with the screen, up to a projector's: this is read from the back of a room.
+ */
+
+/* Sky above, sea below. */
+.scene-bg {
+    background: linear-gradient(var(--sky) 0 56%, var(--sea) 56% 100%) fixed;
 }
 
-.bubble {
-    animation: float 6s ease-in-out infinite backwards;
+/* ── scenery: fixed behind the page ── */
+.scenery {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
 }
 
-@keyframes float {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
-}
-
-.clock-desktop {
-    font-size: clamp(2rem, 4.5vw, 6rem);
-}
-
-/* CSS-only seven-segment digit display */
-.seg-digit {
-    position: relative;
-    display: inline-block;
-    vertical-align: middle;
-    width: 0.62em;
-    height: 1em;
-    margin: 0 0.06em;
-}
-
-.seg {
+.waves i {
     position: absolute;
-    /* unlit segment: a faint hint of the text color */
-    background: color-mix(in srgb, var(--color-black, #000) 8%, transparent);
-    transition: background 0.08s linear, box-shadow 0.08s linear;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--wave) 0 28px, transparent 28px 72px);
 }
+.waves i:nth-child(1) { top: 62%; }
+.waves i:nth-child(2) { top: 72%; background-position-x: 36px; }
+.waves i:nth-child(3) { top: 84%; background-position-x: 12px; }
+.waves i:nth-child(4) { top: 94%; background-position-x: 52px; }
 
-.seg.on {
-    background: #ef4444;
-    box-shadow: 0 0 6px #ef4444, 0 0 18px rgba(239, 68, 68, 0.8);
-}
-
-.seg-h {
-    clip-path: polygon(8% 0%, 92% 0%, 100% 50%, 92% 100%, 8% 100%, 0% 50%);
-}
-
-.seg-v {
-    clip-path: polygon(0% 10%, 50% 0%, 100% 10%, 100% 90%, 50% 100%, 0% 90%);
-}
-
-.seg-a {
-    top: 0%;
-    left: 10%;
-    width: 80%;
-    height: 9%;
-}
-
-.seg-g {
-    top: 45.5%;
-    left: 10%;
-    width: 80%;
-    height: 9%;
-}
-
-.seg-d {
-    top: 91%;
-    left: 10%;
-    width: 80%;
-    height: 9%;
-}
-
-.seg-f {
-    top: 4%;
-    left: 0%;
-    width: 13%;
-    height: 43%;
-}
-
-.seg-b {
-    top: 4%;
-    right: 0%;
-    width: 13%;
-    height: 43%;
-}
-
-.seg-e {
-    top: 53%;
-    left: 0%;
-    width: 13%;
-    height: 43%;
-}
-
-.seg-c {
-    top: 53%;
-    right: 0%;
-    width: 13%;
-    height: 43%;
-}
-
-.seg-colon {
-    display: inline-block;
-    position: relative;
-    width: 0.22em;
-    height: 1em;
-    vertical-align: middle;
-}
-
-.seg-colon::before,
-.seg-colon::after {
-    content: '';
+/* A square sun with the corners cut off. At night it is a moon. */
+.sun {
     position: absolute;
-    left: 50%;
-    width: 0.16em;
-    height: 0.16em;
-    margin-left: -0.08em;
-    border-radius: 50%;
-    background: #ef4444;
+    top: 30px;
+    right: 56px;
+    width: 56px;
+    height: 56px;
+    background: var(--sun);
+    clip-path: polygon(0 25%, 25% 25%, 25% 0, 75% 0, 75% 25%, 100% 25%, 100% 75%, 75% 75%, 75% 100%, 25% 100%, 25% 75%, 0 75%);
+}
+html.dark .sun::after {
+    content: "";
+    position: absolute;
+    left: 30%;
+    top: 22%;
+    width: 14px;
+    height: 14px;
+    background: #b6bddb;
 }
 
-.seg-colon::before {
-    top: 28%;
+.stars {
+    display: none;
+    position: absolute;
+    top: 40px;
+    left: 70px;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    box-shadow: 130px 36px #fff, 250px 10px #ffd, 380px 64px #fff, 520px 20px #fff, 640px 70px #ffd,
+        760px 30px #fff, 880px 12px #fff, 300px 150px #fff, 60px 120px #ffd, 700px 140px #fff,
+        1000px 40px #fff, 1150px 90px #ffd, 1300px 20px #fff, 1450px 110px #fff, 1600px 50px #ffd;
+}
+html.dark .stars {
+    display: block;
 }
 
-.seg-colon::after {
-    top: 62%;
+/* A pirate ship, in pixels. */
+.ship {
+    position: absolute;
+    right: 4%;
+    bottom: 8%;
+    width: 130px;
+    height: 120px;
+}
+.ship i {
+    position: absolute;
+    display: block;
+}
+.ship .hull {
+    left: 0;
+    bottom: 0;
+    width: 130px;
+    height: 30px;
+    background: #6b3a1f;
+    clip-path: polygon(0 0, 100% 0, 100% 30%, 92% 30%, 92% 65%, 84% 65%, 84% 100%, 16% 100%, 16% 65%, 8% 65%, 8% 30%, 0 30%);
+}
+.ship .mast { left: 62px; bottom: 30px; width: 6px; height: 78px; background: #3a2410; }
+.ship .sail { left: 68px; bottom: 42px; width: 52px; height: 46px; background: #1d2b53; }
+.ship .flag { left: 68px; bottom: 106px; width: 26px; height: 12px; background: var(--accent); }
+.ship .skull {
+    left: 84px;
+    bottom: 58px;
+    width: 4px;
+    height: 4px;
+    background: #fff1e8;
+    box-shadow: 4px 0 #fff1e8, 8px 0 #fff1e8, -4px 4px #fff1e8, 0 4px #fff1e8, 4px 4px #fff1e8, 8px 4px #fff1e8,
+        12px 4px #fff1e8, -4px 8px #fff1e8, 4px 8px #fff1e8, 12px 8px #fff1e8, -4px 12px #fff1e8, 0 12px #fff1e8,
+        4px 12px #fff1e8, 8px 12px #fff1e8, 12px 12px #fff1e8, 0 16px #fff1e8, 8px 16px #fff1e8;
+}
+
+/* A little life. Everything here stops for people who have asked their device for less movement. */
+@media (prefers-reduced-motion: no-preference) {
+    .waves i:nth-child(odd) { animation: drift 10s steps(9) infinite; }
+    .waves i:nth-child(even) { animation: drift 14s steps(9) infinite reverse; }
+    .ship { animation: bob 3s steps(2) infinite; }
+    .stars { animation: twinkle 2.4s steps(1) infinite; }
+    .msg { animation: bob 5s steps(2) infinite; } /* with a different delay on each, set when it is made */
+    .msg::after { animation: blink 1s steps(1) infinite; }
+}
+@keyframes drift { to { background-position-x: 72px; } }
+@keyframes bob { 50% { transform: translateY(4px); } }
+@keyframes twinkle { 50% { opacity: 0.45; } }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── the title ── */
+.title {
+    margin: 0;
+    text-align: center;
+    font-family: var(--font-pixel);
+    font-size: clamp(18px, 2.4vw, 46px);
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-shadow: 4px 4px 0 var(--panel);
+}
+
+/* ── the clock: pixel digits drawn with big squares, in a window ── */
+.clock-display {
+    --cell: clamp(8px, 1.1vw, 22px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: calc(var(--cell) * 0.4);
+    padding: calc(var(--cell) * 1.6) calc(var(--cell) * 1.4) calc(var(--cell) * 1.1);
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 -4px 0 0 var(--bd), 0 4px 0 0 var(--bd), -4px 0 0 0 var(--bd), 4px 0 0 0 var(--bd), 0 12px 0 4px #0003;
+}
+.grp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.grp i {
+    margin-top: calc(var(--cell) * 1.1);
+    font: 400 clamp(9px, 0.8vw, 16px) / 1 var(--font-pixel);
+    font-style: normal;
+    text-transform: uppercase;
+}
+.bms {
+    display: flex;
+    gap: calc(var(--cell) * 0.8);
+}
+.bm {
+    display: grid;
+    grid-template-columns: repeat(3, var(--cell));
+    grid-auto-rows: var(--cell);
+    gap: 2px;
+}
+.bm s {
+    display: block;
+    text-decoration: none;
+}
+.bm s.on {
+    background: var(--ink);
+}
+/* the colon: two squares */
+.bsep {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: calc(var(--cell) * 5 + 8px);
+    padding: var(--cell) calc(var(--cell) * 0.5);
+}
+.bsep s {
+    display: block;
+    width: var(--cell);
+    height: var(--cell);
+    background: var(--accent);
+    text-decoration: none;
+}
+@media (max-width: 767px) {
+    .clock-display {
+        --cell: clamp(5px, 1.9vw, 9px);
+    }
+}
+
+/* ── a message: a dialogue box, with the sender's name and hold on tabs ── */
+.msg {
+    position: relative;
+    width: 100%;
+    max-width: clamp(250px, 24vw, 440px);
+    margin-top: 18px;
+    padding: 28px 16px 24px;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: clamp(20px, 1.7vw, 34px);
+    line-height: 1.1;
+    box-shadow: 0 -4px 0 0 var(--bd), 0 4px 0 0 var(--bd), -4px 0 0 0 var(--bd), 4px 0 0 0 var(--bd);
+}
+.msg p {
+    margin: 0;
+    padding-right: 10px;
+    overflow-wrap: anywhere;
+}
+.msg .who,
+.msg .tag {
+    position: absolute;
+    top: -18px;
+    padding: 5px 8px 4px;
+    font: 400 clamp(10px, 0.85vw, 16px) / 1 var(--font-pixel);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.msg .who {
+    left: 10px;
+    max-width: 55%;
+    background: var(--accent);
+    color: var(--onaccent);
+}
+.msg .tag {
+    right: 10px;
+    max-width: 38%;
+    background: var(--tab);
+    color: var(--tabink);
+}
+/* the little arrow that says "more" in a dialogue box */
+.msg::after {
+    content: "▼";
+    position: absolute;
+    right: 10px;
+    bottom: 3px;
+    font-size: 12px;
+    color: var(--accent);
+}
+@media (max-width: 767px) {
+    .msg {
+        max-width: none;
+    }
 }

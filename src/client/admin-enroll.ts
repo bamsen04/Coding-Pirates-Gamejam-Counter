@@ -13,13 +13,13 @@ async function post(url: string, body: unknown) {
 }
 
 button.addEventListener("click", async () => {
-    statusEl.className = "text-sm text-red-500";
+    statusEl.className = "text-accent";
     statusEl.textContent = "";
     try {
         const optionsJSON = await post("/admin/enroll/options", { token });
         const response = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON });
         await post("/admin/enroll/verify", { token, response });
-        statusEl.className = "text-sm text-green-600";
+        statusEl.className = "text-good";
         statusEl.textContent = "Adgangsnøgle registreret. Du kan nu logge ind.";
         button.disabled = true;
     } catch (err) {

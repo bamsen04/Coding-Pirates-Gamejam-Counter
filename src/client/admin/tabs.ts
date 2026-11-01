@@ -1,7 +1,7 @@
 // The admin page is split into tabs. Only one panel shows at a time, and the tab you're on is kept in
 // the address (#holds), so a reload or a shared link opens the same one.
-const ACTIVE = ["bg-black", "text-white"];
-const INACTIVE = ["bg-white", "hover:bg-slate-100"];
+const ACTIVE = ["bg-accent", "text-onaccent"];
+const INACTIVE = ["bg-field", "text-ink", "hover:brightness-95"];
 const DEFAULT_TAB = "messages";
 
 const tabs = document.querySelectorAll<HTMLButtonElement>("[data-tab]");
