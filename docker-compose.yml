@@ -31,7 +31,7 @@ services:
       - dbdata:/var/lib/mysql
     healthcheck:
       # 127.0.0.1 forces TCP, so this only passes once the real server is up (not the temporary init server)
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\""]
       interval: 5s
       timeout: 5s
       retries: 10
